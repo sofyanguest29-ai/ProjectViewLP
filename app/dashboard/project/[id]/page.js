@@ -11,7 +11,7 @@ import SearchableSelect from '@/components/SearchableSelect'
 import { createClient } from '@/lib/supabaseClient'
 import { useCurrentUser } from '@/lib/useCurrentUser'
 import { DEV_LOG_STATUS, QUESTIONNAIRE, impactBand } from '@/lib/constants'
-import { computeStatusCounts, statusLabelWithCount } from '@/lib/statusCount'
+import { computeStartDate, computeFinishDate } from '@/lib/projectDates'
 
 export default function ProjectDetailPage() {
   const { id } = useParams()
@@ -47,8 +47,6 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     load()
   }, [load])
-
-  const statusCounts = useMemo(() => computeStatusCounts(logs), [logs])
 
   const filteredLogs = useMemo(() => {
     return logs.filter((l) => {
@@ -91,6 +89,9 @@ export default function ProjectDetailPage() {
     : null
   const band = totalScore !== null ? impactBand(totalScore) : null
 
+  const startDate = computeStartDate(logs)
+  const finishDate = computeFinishDate(logs)
+
   return (
     <>
       <Navbar />
@@ -112,13 +113,32 @@ export default function ProjectDetailPage() {
 
         <div className="detail-grid">
           <div className="field-block">
+            <label>Project Type</label>
+            <p>{project.project_type || '-'}</p>
+          </div>
+          <div className="field-block" />
+
+          <div className="field-block">
             <label>Objective</label>
-            <p>{project.objective || '-'}</p>
+            <div className="rte-readonly" dangerouslySetInnerHTML={{ __html: project.objective || '-' }} />
+          </div>
+          <div className="field-block" />
+
+          <div className="field-block">
+            <label>Start Date</label>
+            <p>{startDate ? format(parseISO(startDate), 'd MMMM yyyy') : '-'}</p>
           </div>
           <div className="field-block">
-            <label>Expected Result</label>
-            <p>{project.expected_result || '-'}</p>
+            <label>Finish Date</label>
+            <p>{finishDate ? format(parseISO(finishDate), 'd MMMM yyyy') : '-'}</p>
           </div>
+
+          <div className="field-block">
+            <label>Expected Result</label>
+            <div className="rte-readonly" dangerouslySetInnerHTML={{ __html: project.expected_result || '-' }} />
+          </div>
+          <div className="field-block" />
+
           <div className="field-block">
             <label>Nama Requestor</label>
             <p>{(project.requestors ?? []).join(', ') || '-'}</p>
@@ -127,21 +147,26 @@ export default function ProjectDetailPage() {
             <label>Divisi</label>
             <p>{(project.divisions ?? []).join(', ') || '-'}</p>
           </div>
-          <div className="field-block">
-            <label>Impact</label>
+
+          <div className="field-block detail-grid-full">
+            <label>Impact Measurement</label>
             {Object.keys(project.impacts ?? {}).length === 0 && <p>-</p>}
             {Object.entries(project.impacts ?? {}).map(([type, detail]) => (
-              <p key={type}><strong>{type}:</strong> {detail || '-'}</p>
+              <div key={type} className="impact-readonly-row">
+                <strong>{type}:</strong>
+                <div className="rte-readonly" dangerouslySetInnerHTML={{ __html: detail || '-' }} />
+              </div>
             ))}
           </div>
-          <div className="field-block">
+
+          <div className="field-block detail-grid-full">
             <label>Requirements</label>
             <div className="rte-readonly" dangerouslySetInnerHTML={{ __html: project.requirements || '-' }} />
           </div>
         </div>
 
         <div className="questionnaire-block questionnaire-block-readonly">
-          <h3>Impact Assessment</h3>
+          <h3>Priority Scoring</h3>
           <div className="detail-grid">
             {QUESTIONNAIRE.map((q, idx) => {
               const scoreKey = `q${idx + 1}_score`
@@ -156,7 +181,7 @@ export default function ProjectDetailPage() {
             })}
           </div>
           <div className="field-block">
-            <label>Impact Measurement</label>
+            <label>Priority</label>
             {band ? (
               <div className="impact-measurement-result" style={{ color: band.color, background: band.bg }}>
                 Total: {totalScore} &mdash; {band.label}
@@ -186,14 +211,6 @@ export default function ProjectDetailPage() {
                 value={logFilters.date}
                 onChange={(e) => setLogFilters((f) => ({ ...f, date: e.target.value }))}
               />
-              <button
-                type="button"
-                className="sort-arrow-btn"
-                onClick={() => setSortAsc((v) => !v)}
-                title={sortAsc ? 'Urutkan terbaru ke terlama' : 'Urutkan terlama ke terbaru'}
-              >
-                {sortAsc ? '↑ Terlama' : '↓ Terbaru'}
-              </button>
               {!isGuest && (
                 <button type="button" className="devlog-add-icon-btn" onClick={() => setAddingLog(true)} title="Tambah Development Log">
                   +
@@ -201,13 +218,23 @@ export default function ProjectDetailPage() {
               )}
             </div>
           </div>
+          <div className="devlog-sort-row">
+            <button
+              type="button"
+              className="sort-arrow-btn"
+              onClick={() => setSortAsc((v) => !v)}
+              title={sortAsc ? 'Urutkan terbaru ke terlama' : 'Urutkan terlama ke terbaru'}
+            >
+              &#8645; {sortAsc ? 'Terlama' : 'Terbaru'}
+            </button>
+          </div>
           <div className="devlog-list">
             {sortedLogs.length === 0 && <p className="empty-state">Belum ada development log.</p>}
             {sortedLogs.map((log) => (
               <button type="button" key={log.id} className="devlog-list-item" onClick={() => setSelectedLog(log)}>
                 <span className="devlog-date">{format(parseISO(log.log_date), 'd MMM yyyy')}</span>
                 <span className="devlog-title">{log.title}</span>
-                <span className="devlog-status">{statusLabelWithCount(log, statusCounts)}</span>
+                <span className="devlog-status">{log.status}</span>
               </button>
             ))}
           </div>
@@ -217,7 +244,6 @@ export default function ProjectDetailPage() {
       {selectedLog && (
         <LogDetailModal
           log={selectedLog}
-          statusLabel={statusLabelWithCount(selectedLog, statusCounts)}
           isGuest={isGuest}
           allProjects={allProjects}
           onClose={() => setSelectedLog(null)}

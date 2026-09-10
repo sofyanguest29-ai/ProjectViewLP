@@ -1,7 +1,7 @@
 'use client'
 import { useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabaseClient'
-import { DIVISIONS, PROJECT_STATUS, QUESTIONNAIRE, randomProjectCode, impactBand } from '@/lib/constants'
+import { DIVISIONS, PROJECT_STATUS, PROJECT_TYPES, QUESTIONNAIRE, randomProjectCode, impactBand } from '@/lib/constants'
 import MultiSelect from './MultiSelect'
 import RequestorSelect from './RequestorSelect'
 import ImpactSelect from './ImpactSelect'
@@ -15,14 +15,14 @@ export default function ProjectModal({
   allProjects = [],
   savedRequestors = [],
   onRequestorsChanged,
-  prefill = null,
   onClose,
   onSaved,
 }) {
   const supabase = createClient()
-  const seed = mode === 'add' && prefill ? prefill : project
+  const seed = project
 
   const [title, setTitle] = useState(seed?.title ?? '')
+  const [projectType, setProjectType] = useState(seed?.project_type ?? '')
   const [objective, setObjective] = useState(seed?.objective ?? '')
   const [expectedResult, setExpectedResult] = useState(seed?.expected_result ?? '')
   const [requestors, setRequestors] = useState(seed?.requestors ?? [])
@@ -36,13 +36,7 @@ export default function ProjectModal({
     q3_score: seed?.q3_score ?? null,
     q4_score: seed?.q4_score ?? null,
   })
-  const [logs, setLogs] = useState(
-    mode === 'add' && prefill?.developmentLogs?.length > 0
-      ? prefill.developmentLogs
-      : existingLogs.length > 0
-      ? existingLogs
-      : []
-  )
+  const [logs, setLogs] = useState(existingLogs.length > 0 ? existingLogs : [])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -87,6 +81,7 @@ export default function ProjectModal({
     try {
       const payload = {
         title,
+        project_type: projectType || null,
         objective,
         expected_result: expectedResult,
         requestors,
@@ -156,13 +151,23 @@ export default function ProjectModal({
           </div>
 
           <div className="field-block">
+            <label>Project Type</label>
+            <select value={projectType} onChange={(e) => setProjectType(e.target.value)}>
+              <option value="">Pilih project type...</option>
+              {PROJECT_TYPES.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="field-block">
             <label>Objective</label>
-            <textarea rows={3} value={objective} onChange={(e) => setObjective(e.target.value)} />
+            <RichTextEditor value={objective} onChange={setObjective} allProjects={allProjects} placeholder="Tulis objective di sini..." />
           </div>
 
           <div className="field-block">
             <label>Expected Result</label>
-            <textarea rows={3} value={expectedResult} onChange={(e) => setExpectedResult(e.target.value)} />
+            <RichTextEditor value={expectedResult} onChange={setExpectedResult} allProjects={allProjects} placeholder="Tulis expected result di sini..." />
           </div>
 
           <div className="field-block">
@@ -181,8 +186,8 @@ export default function ProjectModal({
           </div>
 
           <div className="field-block">
-            <label>Impact</label>
-            <ImpactSelect impacts={impacts} onChange={setImpacts} />
+            <label>Impact Measurement</label>
+            <ImpactSelect impacts={impacts} onChange={setImpacts} allProjects={allProjects} />
           </div>
 
           <div className="field-block">
@@ -205,7 +210,7 @@ export default function ProjectModal({
           </div>
 
           <div className="questionnaire-block">
-            <h3>Impact Assessment</h3>
+            <h3>Priority Scoring</h3>
             {QUESTIONNAIRE.map((q) => (
               <div className="field-block" key={q.key}>
                 <label>{q.question}</label>
@@ -221,7 +226,7 @@ export default function ProjectModal({
               </div>
             ))}
             <div className="field-block">
-              <label>Impact Measurement</label>
+              <label>Priority</label>
               {band ? (
                 <div className="impact-measurement-result" style={{ color: band.color, background: band.bg }}>
                   Total: {totalScore} &mdash; {band.label}

@@ -2,18 +2,16 @@
 import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { format, parseISO } from 'date-fns'
 import Navbar from '@/components/Navbar'
 import FilterBar from '@/components/FilterBar'
 import RowMenu from '@/components/RowMenu'
 import StatusBadge from '@/components/StatusBadge'
 import ProjectModal from '@/components/ProjectModal'
-import SearchableSelect from '@/components/SearchableSelect'
 import RequestorTags from '@/components/RequestorTags'
-import ImportDocumentModal from '@/components/ImportDocumentModal'
 import { createClient } from '@/lib/supabaseClient'
 import { useCurrentUser } from '@/lib/useCurrentUser'
-import { DEV_LOG_STATUS } from '@/lib/constants'
-import { computeSlaDays } from '@/lib/slaCalc'
+import { computeStartDate, computeFinishDate } from '@/lib/projectDates'
 
 export default function DashboardPage() {
   const [projects, setProjects] = useState([])
@@ -21,14 +19,11 @@ export default function DashboardPage() {
   const [savedRequestors, setSavedRequestors] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [filters, setFilters] = useState({ division: '', requestor: '', status: '' })
-  const [slaFilter, setSlaFilter] = useState({ from: 'Identify', to: 'Maintain' })
+  const [filters, setFilters] = useState({ division: '', requestor: '', status: '', projectType: '' })
   const [viewMenuOpen, setViewMenuOpen] = useState(false)
   const [modalMode, setModalMode] = useState(null)
   const [editingProject, setEditingProject] = useState(null)
   const [editingLogs, setEditingLogs] = useState([])
-  const [importOpen, setImportOpen] = useState(false)
-  const [prefillData, setPrefillData] = useState(null)
   const router = useRouter()
   const supabase = createClient()
   const { isGuest } = useCurrentUser()
@@ -66,6 +61,7 @@ export default function DashboardPage() {
       if (filters.division && !(p.divisions ?? []).includes(filters.division)) return false
       if (filters.requestor && !(p.requestors ?? []).includes(filters.requestor)) return false
       if (filters.status && p.status !== filters.status) return false
+      if (filters.projectType && p.project_type !== filters.projectType) return false
       if (search) {
         const q = search.toLowerCase()
         if (!p.project_code.includes(q) && !p.title.toLowerCase().includes(q)) return false
@@ -93,14 +89,12 @@ export default function DashboardPage() {
       .order('log_date', { ascending: true })
     setEditingProject(project)
     setEditingLogs(logs ?? [])
-    setPrefillData(null)
     setModalMode('edit')
   }
 
   function openAdd() {
     setEditingProject(null)
     setEditingLogs([])
-    setPrefillData(null)
     setModalMode('add')
   }
 
@@ -108,76 +102,39 @@ export default function DashboardPage() {
     setModalMode(null)
     setEditingProject(null)
     setEditingLogs([])
-    setPrefillData(null)
   }
-
-  function handleImported(data) {
-    setImportOpen(false)
-    setPrefillData(data)
-    setEditingProject(null)
-    setEditingLogs([])
-    setModalMode('add')
-  }
-
-  const devStatusOptions = DEV_LOG_STATUS.map((s) => ({ value: s, label: s }))
 
   return (
     <>
       <Navbar />
       <main className="container container-wide">
-        <div className="dashboard-top">
-          <div className="dashboard-top-left">
-            <FilterBar filters={filters} onChange={setFilters} requestorOptions={requestorOptions} />
-            <div className="filter-group">
-              <label>SLA: dari status</label>
-              <SearchableSelect
-                options={devStatusOptions}
-                value={slaFilter.from}
-                onChange={(v) => setSlaFilter((f) => ({ ...f, from: v }))}
-                allLabel="Pilih status"
-                placeholder="Dari status..."
-              />
-            </div>
-            <div className="filter-group">
-              <label>SLA: ke status</label>
-              <SearchableSelect
-                options={devStatusOptions}
-                value={slaFilter.to}
-                onChange={(v) => setSlaFilter((f) => ({ ...f, to: v }))}
-                allLabel="Pilih status"
-                placeholder="Ke status..."
-              />
-            </div>
-            {!isGuest && (
-              <div className="dashboard-add-buttons">
-                <button type="button" className="add-project-link" onClick={openAdd}>
-                  + Add New Project
-                </button>
-                <button type="button" className="import-doc-link" onClick={() => setImportOpen(true)}>
-                  Import dari Word/PDF
-                </button>
+        <div className="dashboard-top-row">
+          <input
+            className="search-input"
+            placeholder="Cari ID atau nama project..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <div className="view-switcher">
+            <button type="button" onClick={() => setViewMenuOpen((v) => !v)}>
+              Kanban / Calendar &#9662;
+            </button>
+            {viewMenuOpen && (
+              <div className="view-switcher-dropdown">
+                <Link href="/dashboard/kanban">Kanban View</Link>
+                <Link href="/dashboard/calendar">Calendar View</Link>
               </div>
             )}
           </div>
-          <div className="dashboard-top-right">
-            <input
-              className="search-input"
-              placeholder="Cari ID atau nama project..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <div className="view-switcher">
-              <button type="button" onClick={() => setViewMenuOpen((v) => !v)}>
-                Kanban / Calendar &#9662;
-              </button>
-              {viewMenuOpen && (
-                <div className="view-switcher-dropdown">
-                  <Link href="/dashboard/kanban">Kanban View</Link>
-                  <Link href="/dashboard/calendar">Calendar View</Link>
-                </div>
-              )}
-            </div>
-          </div>
+        </div>
+
+        <div className="dashboard-top-row">
+          <FilterBar filters={filters} onChange={setFilters} requestorOptions={requestorOptions} />
+          {!isGuest && (
+            <button type="button" className="add-project-link" onClick={openAdd}>
+              + Add New Project
+            </button>
+          )}
         </div>
 
         {loading ? (
@@ -189,25 +146,31 @@ export default function DashboardPage() {
                 <th>No</th>
                 <th>ID Project</th>
                 <th>Nama Project</th>
+                <th>Project Type</th>
                 <th>Nama Requestor</th>
                 <th>Divisi</th>
                 <th>Status Project</th>
-                <th>SLA Status</th>
+                <th>Start Date</th>
+                <th>Finish Date</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
               {filteredProjects.map((p, index) => {
-                const slaDays = computeSlaDays(logsByProject[p.id] ?? [], slaFilter.from, slaFilter.to)
+                const projLogs = logsByProject[p.id] ?? []
+                const startDate = computeStartDate(projLogs)
+                const finishDate = computeFinishDate(projLogs)
                 return (
                   <tr key={p.id} onDoubleClick={() => router.push(`/dashboard/project/${p.id}`)}>
                     <td>{index + 1}</td>
                     <td>#{p.project_code}</td>
                     <td>{p.title}</td>
+                    <td>{p.project_type || '-'}</td>
                     <td><RequestorTags names={p.requestors ?? []} /></td>
                     <td>{(p.divisions ?? []).join(', ')}</td>
                     <td><StatusBadge status={p.status} /></td>
-                    <td>{slaDays !== null ? `${slaDays} hari` : '-'}</td>
+                    <td>{startDate ? format(parseISO(startDate), 'd MMM yyyy') : '-'}</td>
+                    <td>{finishDate ? format(parseISO(finishDate), 'd MMM yyyy') : '-'}</td>
                     <td>
                       <RowMenu
                         isGuest={isGuest}
@@ -221,7 +184,7 @@ export default function DashboardPage() {
               })}
               {filteredProjects.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="empty-state">Tidak ada project.</td>
+                  <td colSpan={10} className="empty-state">Tidak ada project.</td>
                 </tr>
               )}
             </tbody>
@@ -237,14 +200,9 @@ export default function DashboardPage() {
           allProjects={projects}
           savedRequestors={savedRequestors}
           onRequestorsChanged={loadProjects}
-          prefill={prefillData}
           onClose={closeModal}
           onSaved={loadProjects}
         />
-      )}
-
-      {importOpen && (
-        <ImportDocumentModal onClose={() => setImportOpen(false)} onParsed={handleImported} />
       )}
     </>
   )

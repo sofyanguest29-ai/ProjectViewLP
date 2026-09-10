@@ -405,6 +405,54 @@ body {
   max-width: 1280px;
 }
 
+/* ============ Dashboard two-row top layout ============ */
+.dashboard-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.filter-clear-group {
+  flex: 0 0 auto;
+}
+.filter-clear-btn {
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #6b7280;
+}
+.filter-clear-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* ============ Dev log sort row (below header actions) ============ */
+.devlog-sort-row {
+  margin: 6px 0 10px;
+}
+
+/* ============ Impact readonly display (detail page) ============ */
+.impact-readonly-row {
+  margin-bottom: 10px;
+}
+.impact-readonly-row strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 13px;
+}
+.detail-grid-full {
+  grid-column: 1 / -1;
+}
+
 /* ============ Dashboard top bar ============ */
 .dashboard-top {
   display: flex;
@@ -819,9 +867,17 @@ body {
   content: attr(data-placeholder);
   color: #9ca3af;
 }
+.rte-content,
+.rte-content * {
+  font-family: inherit !important;
+}
 .rte-readonly {
   font-size: 14px;
   line-height: 1.6;
+}
+.rte-readonly,
+.rte-readonly * {
+  font-family: inherit !important;
 }
 .project-tag {
   background: #eef2ff;
@@ -1176,6 +1232,8 @@ body {
   border-radius: 6px;
   font-size: 13px;
   min-width: 150px;
+  height: 35px;
+  box-sizing: border-box;
 }
 .searchable-select-dropdown {
   position: absolute;
@@ -1347,6 +1405,9 @@ body {
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 13px;
+  width: 150px;
+  height: 35px;
+  box-sizing: border-box;
 }
 .devlog-add-icon-btn {
   background: #4f46e5;

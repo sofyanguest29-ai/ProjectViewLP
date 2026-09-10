@@ -5,7 +5,7 @@ import { DEV_LOG_STATUS } from '@/lib/constants'
 import { format, parseISO } from 'date-fns'
 import RichTextEditor from './RichTextEditor'
 
-export default function LogDetailModal({ log, statusLabel, isGuest, allProjects = [], onClose, onSaved }) {
+export default function LogDetailModal({ log, isGuest, allProjects = [], onClose, onSaved }) {
   const supabase = createClient()
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState(log.title)
@@ -58,7 +58,7 @@ export default function LogDetailModal({ log, statusLabel, isGuest, allProjects 
                 ))}
               </select>
             ) : (
-              <p>{statusLabel ?? log.status}</p>
+              <p>{log.status}</p>
             )}
           </div>
           <div className="field-block">

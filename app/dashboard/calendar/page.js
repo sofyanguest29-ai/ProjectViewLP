@@ -16,7 +16,8 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [selectedLog, setSelectedLog] = useState(null)
-  const [filters, setFilters] = useState({ division: '', requestor: '', status: '' })
+  const [filters, setFilters] = useState({ division: '', requestor: '', status: '', projectType: '' })
+  const [search, setSearch] = useState('')
   const [dateRange, setDateRange] = useState({ start: '', end: '' })
   const router = useRouter()
   const supabase = createClient()
@@ -53,11 +54,16 @@ export default function CalendarPage() {
       if (filters.division && !(proj.divisions ?? []).includes(filters.division)) return false
       if (filters.requestor && !(proj.requestors ?? []).includes(filters.requestor)) return false
       if (filters.status && proj.status !== filters.status) return false
+      if (filters.projectType && proj.project_type !== filters.projectType) return false
+      if (search) {
+        const q = search.toLowerCase()
+        if (!proj.project_code.includes(q) && !proj.title.toLowerCase().includes(q)) return false
+      }
       if (dateRange.start && l.log_date < dateRange.start) return false
       if (dateRange.end && l.log_date > dateRange.end) return false
       return true
     })
-  }, [logs, projectsById, filters, dateRange])
+  }, [logs, projectsById, filters, dateRange, search])
 
   const logsForSelectedDate = useMemo(() => {
     const key = format(selectedDate, 'yyyy-MM-dd')
@@ -71,6 +77,15 @@ export default function CalendarPage() {
         <div className="kanban-header">
           <h1>Calendar</h1>
           <button type="button" className="back-link" onClick={() => router.push('/dashboard')}>&larr; Kembali ke List</button>
+        </div>
+
+        <div className="dashboard-top-row">
+          <input
+            className="search-input"
+            placeholder="Cari ID atau nama project..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
 
         <div className="dashboard-top">

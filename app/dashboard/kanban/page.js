@@ -12,7 +12,8 @@ export default function KanbanPage() {
   const [projects, setProjects] = useState([])
   const [savedRequestors, setSavedRequestors] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState({ division: '', requestor: '', status: '' })
+  const [filters, setFilters] = useState({ division: '', requestor: '', status: '', projectType: '' })
+  const [search, setSearch] = useState('')
   const router = useRouter()
   const supabase = createClient()
   const { isGuest } = useCurrentUser()
@@ -39,9 +40,14 @@ export default function KanbanPage() {
       if (filters.division && !(p.divisions ?? []).includes(filters.division)) return false
       if (filters.requestor && !(p.requestors ?? []).includes(filters.requestor)) return false
       if (filters.status && p.status !== filters.status) return false
+      if (filters.projectType && p.project_type !== filters.projectType) return false
+      if (search) {
+        const q = search.toLowerCase()
+        if (!p.project_code.includes(q) && !p.title.toLowerCase().includes(q)) return false
+      }
       return true
     })
-  }, [projects, filters])
+  }, [projects, filters, search])
 
   async function handleDragEnd(result) {
     if (isGuest) return
@@ -61,6 +67,15 @@ export default function KanbanPage() {
         <div className="kanban-header">
           <h1>Kanban {isGuest && <span className="guest-badge">View Only</span>}</h1>
           <button type="button" className="back-link" onClick={() => router.push('/dashboard')}>&larr; Kembali ke List</button>
+        </div>
+
+        <div className="dashboard-top-row">
+          <input
+            className="search-input"
+            placeholder="Cari ID atau nama project..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
 
         <div className="dashboard-top">

@@ -1,9 +1,10 @@
 'use client'
 import MultiSelect from './MultiSelect'
+import RichTextEditor from './RichTextEditor'
 import { IMPACT_TYPES } from '@/lib/constants'
 
-// impacts: object { Cost: "detail text", Speed: "detail text" }
-export default function ImpactSelect({ impacts, onChange }) {
+// impacts: object { Cost: "<html>", Speed: "<html>" }
+export default function ImpactSelect({ impacts, onChange, allProjects = [] }) {
   const selectedTypes = Object.keys(impacts)
 
   function handleTypesChange(newTypes) {
@@ -14,8 +15,8 @@ export default function ImpactSelect({ impacts, onChange }) {
     onChange(newImpacts)
   }
 
-  function handleDetailChange(type, detail) {
-    onChange({ ...impacts, [type]: detail })
+  function handleDetailChange(type, html) {
+    onChange({ ...impacts, [type]: html })
   }
 
   return (
@@ -31,10 +32,10 @@ export default function ImpactSelect({ impacts, onChange }) {
           {selectedTypes.map((type) => (
             <div key={type} className="impact-detail-row">
               <label>{type}</label>
-              <textarea
-                rows={2}
+              <RichTextEditor
                 value={impacts[type] ?? ''}
-                onChange={(e) => handleDetailChange(type, e.target.value)}
+                onChange={(html) => handleDetailChange(type, html)}
+                allProjects={allProjects}
                 placeholder={`Detail dampak untuk ${type}...`}
               />
             </div>
