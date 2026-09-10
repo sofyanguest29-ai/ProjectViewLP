@@ -1,29 +1,58 @@
 'use client'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabaseClient'
-import { DIVISIONS, PROJECT_STATUS, randomProjectCode } from '@/lib/constants'
+import { DIVISIONS, PROJECT_STATUS, QUESTIONNAIRE, randomProjectCode, impactBand } from '@/lib/constants'
 import MultiSelect from './MultiSelect'
+import RequestorSelect from './RequestorSelect'
 import ImpactSelect from './ImpactSelect'
 import RichTextEditor from './RichTextEditor'
 import DevelopmentLogEditor from './DevelopmentLogEditor'
 
-export default function ProjectModal({ mode = 'add', project = null, existingLogs = [], allProjects = [], onClose, onSaved }) {
+export default function ProjectModal({
+  mode = 'add',
+  project = null,
+  existingLogs = [],
+  allProjects = [],
+  savedRequestors = [],
+  onRequestorsChanged,
+  prefill = null,
+  onClose,
+  onSaved,
+}) {
   const supabase = createClient()
-  const [title, setTitle] = useState(project?.title ?? '')
-  const [objective, setObjective] = useState(project?.objective ?? '')
-  const [expectedResult, setExpectedResult] = useState(project?.expected_result ?? '')
-  const [requestor, setRequestor] = useState(project?.requestor ?? '')
-  const [divisions, setDivisions] = useState(project?.divisions ?? [])
-  const [impacts, setImpacts] = useState(project?.impacts ?? {})
-  const [requirements, setRequirements] = useState(project?.requirements ?? '')
-  const [status, setStatus] = useState(project?.status ?? 'backlog')
+  const seed = mode === 'add' && prefill ? prefill : project
+
+  const [title, setTitle] = useState(seed?.title ?? '')
+  const [objective, setObjective] = useState(seed?.objective ?? '')
+  const [expectedResult, setExpectedResult] = useState(seed?.expected_result ?? '')
+  const [requestors, setRequestors] = useState(seed?.requestors ?? [])
+  const [divisions, setDivisions] = useState(seed?.divisions ?? [])
+  const [impacts, setImpacts] = useState(seed?.impacts ?? {})
+  const [requirements, setRequirements] = useState(seed?.requirements ?? '')
+  const [status, setStatus] = useState(seed?.status ?? 'backlog')
+  const [scores, setScores] = useState({
+    q1_score: seed?.q1_score ?? null,
+    q2_score: seed?.q2_score ?? null,
+    q3_score: seed?.q3_score ?? null,
+    q4_score: seed?.q4_score ?? null,
+  })
   const [logs, setLogs] = useState(
-    existingLogs.length > 0
+    mode === 'add' && prefill?.developmentLogs?.length > 0
+      ? prefill.developmentLogs
+      : existingLogs.length > 0
       ? existingLogs
       : []
   )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  const totalScore = useMemo(() => {
+    const values = Object.values(scores)
+    if (values.some((v) => v === null || v === undefined)) return null
+    return values.reduce((sum, v) => sum + Number(v), 0)
+  }, [scores])
+
+  const band = totalScore !== null ? impactBand(totalScore) : null
 
   async function insertWithUniqueCode(payload, attemptsLeft = 5) {
     const code = randomProjectCode()
@@ -49,8 +78,8 @@ export default function ProjectModal({ mode = 'add', project = null, existingLog
       setError('Judul Project wajib diisi')
       return
     }
-    if (!requestor.trim()) {
-      setError('Nama Requestor wajib diisi')
+    if (requestors.length === 0) {
+      setError('Nama Requestor wajib diisi minimal 1')
       return
     }
 
@@ -60,11 +89,15 @@ export default function ProjectModal({ mode = 'add', project = null, existingLog
         title,
         objective,
         expected_result: expectedResult,
-        requestor,
+        requestors,
         divisions,
         impacts,
         requirements,
         status,
+        q1_score: scores.q1_score,
+        q2_score: scores.q2_score,
+        q3_score: scores.q3_score,
+        q4_score: scores.q4_score,
       }
 
       let projectRow
@@ -77,8 +110,6 @@ export default function ProjectModal({ mode = 'add', project = null, existingLog
           .single()
         if (error) throw error
         projectRow = data
-
-        // Simplest sync strategy: replace all logs for this project
         await supabase.from('development_logs').delete().eq('project_id', project.id)
       } else {
         projectRow = await insertWithUniqueCode(payload)
@@ -136,7 +167,12 @@ export default function ProjectModal({ mode = 'add', project = null, existingLog
 
           <div className="field-block">
             <label>Nama Requestor</label>
-            <input value={requestor} onChange={(e) => setRequestor(e.target.value)} required />
+            <RequestorSelect
+              selected={requestors}
+              onChange={setRequestors}
+              savedRequestors={savedRequestors}
+              onRequestorsChanged={onRequestorsChanged}
+            />
           </div>
 
           <div className="field-block">
@@ -156,7 +192,7 @@ export default function ProjectModal({ mode = 'add', project = null, existingLog
 
           <div className="field-block">
             <label>Development Log</label>
-            <DevelopmentLogEditor logs={logs} onChange={setLogs} />
+            <DevelopmentLogEditor logs={logs} onChange={setLogs} allProjects={allProjects} />
           </div>
 
           <div className="field-block">
@@ -166,6 +202,34 @@ export default function ProjectModal({ mode = 'add', project = null, existingLog
                 <option key={s.value} value={s.value}>{s.label}</option>
               ))}
             </select>
+          </div>
+
+          <div className="questionnaire-block">
+            <h3>Impact Assessment</h3>
+            {QUESTIONNAIRE.map((q) => (
+              <div className="field-block" key={q.key}>
+                <label>{q.question}</label>
+                <select
+                  value={scores[q.key] ?? ''}
+                  onChange={(e) => setScores((prev) => ({ ...prev, [q.key]: e.target.value ? Number(e.target.value) : null }))}
+                >
+                  <option value="">Pilih jawaban...</option>
+                  {q.options.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.value} - {opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            ))}
+            <div className="field-block">
+              <label>Impact Measurement</label>
+              {band ? (
+                <div className="impact-measurement-result" style={{ color: band.color, background: band.bg }}>
+                  Total: {totalScore} &mdash; {band.label}
+                </div>
+              ) : (
+                <p className="empty-state">Isi semua pertanyaan di atas untuk melihat hasil.</p>
+              )}
+            </div>
           </div>
 
           <div className="modal-footer">

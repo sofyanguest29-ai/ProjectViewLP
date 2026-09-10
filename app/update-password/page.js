@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabaseClient'
+import PasswordField from '@/components/PasswordField'
 
 export default function UpdatePasswordPage() {
   const [password, setPassword] = useState('')
@@ -40,11 +41,11 @@ export default function UpdatePasswordPage() {
         <h1>Set Password Baru</h1>
         {error && <div className="error-box">{error}</div>}
         {message && <div className="success-box">{message}</div>}
-        <label>New Password</label>
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
-        <label>Confirm New Password</label>
-        <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required minLength={8} />
-        <button type="submit" disabled={loading}>{loading ? 'Menyimpan...' : 'Simpan Password'}</button>
+        <PasswordField label="New Password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} />
+        <PasswordField label="Confirm New Password" value={confirm} onChange={(e) => setConfirm(e.target.value)} minLength={8} />
+        <button type="submit" disabled={loading} className="primary-btn">
+          {loading ? 'Menyimpan...' : 'Simpan Password'}
+        </button>
       </form>
     </div>
   )

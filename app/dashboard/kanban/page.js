@@ -1,29 +1,47 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import Navbar from '@/components/Navbar'
+import FilterBar from '@/components/FilterBar'
 import { PROJECT_STATUS } from '@/lib/constants'
 import { createClient } from '@/lib/supabaseClient'
 import { useCurrentUser } from '@/lib/useCurrentUser'
 
 export default function KanbanPage() {
   const [projects, setProjects] = useState([])
+  const [savedRequestors, setSavedRequestors] = useState([])
   const [loading, setLoading] = useState(true)
+  const [filters, setFilters] = useState({ division: '', requestor: '', status: '' })
   const router = useRouter()
   const supabase = createClient()
   const { isGuest } = useCurrentUser()
 
   const load = useCallback(async () => {
     setLoading(true)
-    const { data } = await supabase.from('projects').select('*').order('created_at', { ascending: false })
-    setProjects(data ?? [])
+    const [{ data: p }, { data: r }] = await Promise.all([
+      supabase.from('projects').select('*').order('created_at', { ascending: false }),
+      supabase.from('requestors').select('*').order('name'),
+    ])
+    setProjects(p ?? [])
+    setSavedRequestors(r ?? [])
     setLoading(false)
   }, [])
 
   useEffect(() => {
     load()
   }, [load])
+
+  const requestorOptions = useMemo(() => savedRequestors.map((r) => r.name), [savedRequestors])
+
+  const filteredProjects = useMemo(() => {
+    return projects.filter((p) => {
+      if (filters.division && !(p.divisions ?? []).includes(filters.division)) return false
+      if (filters.requestor && !(p.requestors ?? []).includes(filters.requestor)) return false
+      if (filters.status && p.status !== filters.status) return false
+      return true
+    })
+  }, [projects, filters])
 
   async function handleDragEnd(result) {
     if (isGuest) return
@@ -45,6 +63,10 @@ export default function KanbanPage() {
           <button type="button" className="back-link" onClick={() => router.push('/dashboard')}>&larr; Kembali ke List</button>
         </div>
 
+        <div className="dashboard-top">
+          <FilterBar filters={filters} onChange={setFilters} requestorOptions={requestorOptions} />
+        </div>
+
         {loading ? (
           <p>Memuat...</p>
         ) : (
@@ -60,10 +82,10 @@ export default function KanbanPage() {
                     >
                       <div className="kanban-column-header" style={{ borderColor: col.color }}>
                         {col.label}
-                        <span className="kanban-count">{projects.filter((p) => p.status === col.value).length}</span>
+                        <span className="kanban-count">{filteredProjects.filter((p) => p.status === col.value).length}</span>
                       </div>
                       <div className="kanban-column-body">
-                        {projects
+                        {filteredProjects
                           .filter((p) => p.status === col.value)
                           .map((p, index) => (
                             <Draggable draggableId={p.id} index={index} key={p.id} isDragDisabled={isGuest}>
@@ -77,7 +99,7 @@ export default function KanbanPage() {
                                 >
                                   <div className="kanban-card-code">#{p.project_code}</div>
                                   <div className="kanban-card-title">{p.title}</div>
-                                  <div className="kanban-card-meta">{p.requestor}</div>
+                                  <div className="kanban-card-meta">{(p.requestors ?? []).join(', ')}</div>
                                 </div>
                               )}
                             </Draggable>

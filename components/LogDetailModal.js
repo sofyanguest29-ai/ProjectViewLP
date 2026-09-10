@@ -3,8 +3,9 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabaseClient'
 import { DEV_LOG_STATUS } from '@/lib/constants'
 import { format, parseISO } from 'date-fns'
+import RichTextEditor from './RichTextEditor'
 
-export default function LogDetailModal({ log, isGuest, onClose, onSaved }) {
+export default function LogDetailModal({ log, statusLabel, isGuest, allProjects = [], onClose, onSaved }) {
   const supabase = createClient()
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState(log.title)
@@ -57,15 +58,17 @@ export default function LogDetailModal({ log, isGuest, onClose, onSaved }) {
                 ))}
               </select>
             ) : (
-              <p>{log.status}</p>
+              <p>{statusLabel ?? log.status}</p>
             )}
           </div>
           <div className="field-block">
             <label>Detail</label>
             {editing ? (
-              <textarea rows={5} value={detail} onChange={(e) => setDetail(e.target.value)} />
+              <RichTextEditor value={detail} onChange={setDetail} allProjects={allProjects} placeholder="Detail development log..." />
+            ) : log.detail ? (
+              <div className="rte-readonly" dangerouslySetInnerHTML={{ __html: log.detail }} />
             ) : (
-              <p>{log.detail || <span className="empty-state">Belum ada detail.</span>}</p>
+              <span className="empty-state">Belum ada detail.</span>
             )}
           </div>
 

@@ -42,7 +42,7 @@ body {
   display: block;
   font-size: 13px;
   font-weight: 600;
-  margin: 12px 0 4px;
+  margin: 14px 0 6px;
 }
 
 .auth-form input {
@@ -53,10 +53,10 @@ body {
   font-size: 14px;
 }
 
-.auth-form button {
+.auth-form .primary-btn {
   width: 100%;
-  margin-top: 20px;
-  padding: 10px;
+  margin-top: 22px;
+  padding: 11px;
   background: #4f46e5;
   color: white;
   border: none;
@@ -66,7 +66,7 @@ body {
   cursor: pointer;
 }
 
-.auth-form button:disabled {
+.auth-form .primary-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -358,21 +358,28 @@ body {
   position: relative;
 }
 .password-field input {
-  padding-right: 56px;
+  padding-right: 44px;
 }
-.toggle-password {
+.password-field .toggle-password {
   position: absolute;
-  right: 6px;
+  right: 4px;
   top: 50%;
   transform: translateY(-50%);
-  background: #f3f4f6;
+  background: transparent;
   border: none;
   border-radius: 6px;
-  padding: 5px 10px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #4b5563;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
   cursor: pointer;
+  padding: 0;
+}
+.password-field .toggle-password:hover {
+  background: #f3f4f6;
+  color: #374151;
 }
 
 /* ============ Guest button ============ */
@@ -530,17 +537,14 @@ body {
   color: #6b7280;
 }
 .row-menu-dropdown {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 4px);
+  position: fixed;
   background: white;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  overflow: visible;
-  z-index: 30;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  z-index: 9999;
   display: flex;
   flex-direction: column;
-  min-width: 150px;
+  min-width: 160px;
   padding: 4px;
 }
 .row-menu-dropdown button {
@@ -573,6 +577,7 @@ body {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   padding: 4px;
   min-width: 140px;
+  z-index: 9999;
 }
 
 /* ============ Modal ============ */
@@ -873,6 +878,17 @@ body {
   font-size: 12px;
   color: #9ca3af;
 }
+.tag-picker-close {
+  width: 100%;
+  margin-top: 6px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 6px;
+  padding: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #6b7280;
+}
 
 /* ============ Development log editor ============ */
 .devlog-editor {
@@ -913,6 +929,29 @@ body {
   font-weight: 600;
   cursor: pointer;
   margin-top: 4px;
+}
+
+.devlog-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.devlog-section-header label {
+  margin-bottom: 0;
+}
+.sort-arrow-btn {
+  background: #f3f4f6;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
+  cursor: pointer;
+}
+.sort-arrow-btn:hover {
+  background: #e5e7eb;
 }
 
 /* ============ Development log list (detail/calendar) ============ */
@@ -1124,4 +1163,228 @@ body {
 .navbar-brand {
   display: flex;
   align-items: center;
+}
+
+/* ============ Searchable Select (combobox) ============ */
+.searchable-select {
+  position: relative;
+}
+.searchable-select-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  min-width: 150px;
+}
+.searchable-select-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  z-index: 60;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px;
+}
+.searchable-select-option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 8px 10px;
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #374151;
+}
+.searchable-select-option:hover {
+  background: #f3f4f6;
+}
+.searchable-select-empty {
+  padding: 8px 10px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* ============ Requestor select extras ============ */
+.requestor-search-input {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+.requestor-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.requestor-option label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  cursor: pointer;
+}
+.requestor-delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: #b91c1c;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+.requestor-delete-btn:hover {
+  background: #fee2e2;
+}
+.requestor-add-btn {
+  width: 100%;
+  margin-top: 6px;
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px dashed #c7d2fe;
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ============ Requestor tags + tooltip ============ */
+.requestor-tags-wrapper {
+  position: relative;
+  cursor: default;
+}
+.requestor-more {
+  font-weight: 700;
+  color: #4f46e5;
+}
+.requestor-tooltip {
+  position: fixed;
+  background: #111827;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  max-width: 320px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  z-index: 9999;
+  line-height: 1.5;
+}
+
+/* ============ Questionnaire block ============ */
+.questionnaire-block {
+  background: #fafafa;
+  border-radius: 12px;
+  padding: 18px 20px;
+  margin: 24px 0;
+  border: 1px solid #f1f1f1;
+}
+.questionnaire-block h3 {
+  margin: 0 0 14px;
+  font-size: 15px;
+}
+.questionnaire-block-readonly {
+  background: white;
+}
+.impact-measurement-result {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+/* ============ Dev log block (add/edit form) with detail toggle ============ */
+.devlog-block {
+  border: 1px solid #f1f1f1;
+  border-radius: 8px;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+.devlog-block .devlog-row {
+  grid-template-columns: 150px 1fr 130px 36px 36px;
+  margin-bottom: 0;
+}
+.devlog-toggle {
+  background: #f3f4f6;
+  color: #9ca3af;
+  border: none;
+  border-radius: 6px;
+  height: 34px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+.devlog-toggle-active {
+  background: #dcfce7;
+  color: #15803d;
+}
+.devlog-detail-field {
+  margin-top: 8px;
+}
+
+/* ============ Dev log section header actions (detail page) ============ */
+.devlog-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.devlog-filter-inline {
+  min-width: 160px;
+}
+.devlog-filter-date {
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.devlog-add-icon-btn {
+  background: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  width: 34px;
+  height: 34px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+}
+
+/* ============ Dashboard add buttons + import ============ */
+.dashboard-add-buttons {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.import-doc-link {
+  background: white;
+  color: #4f46e5;
+  border: 1px solid #4f46e5;
+  padding: 9px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  height: 38px;
+}
+.import-doc-hint {
+  font-size: 12px;
+  color: #6b7280;
+  line-height: 1.6;
+  background: #f9fafb;
+  padding: 12px 14px;
+  border-radius: 8px;
+  margin-bottom: 16px;
 }

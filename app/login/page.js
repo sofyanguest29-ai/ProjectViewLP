@@ -3,11 +3,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabaseClient'
+import PasswordField from '@/components/PasswordField'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [guestLoading, setGuestLoading] = useState(false)
@@ -49,32 +49,11 @@ export default function LoginPage() {
         {error && <div className="error-box">{error}</div>}
         <label>Email</label>
         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        <label>Password</label>
-        <div className="password-field">
-          <input
-            type={showPassword ? 'text' : 'password'}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <button
-            type="button"
-            className="toggle-password"
-            onClick={() => setShowPassword((v) => !v)}
-            aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-          >
-            {showPassword ? 'Hide' : 'Show'}
-          </button>
-        </div>
-        <button type="submit" disabled={loading}>
+        <PasswordField label="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
+        <button type="submit" disabled={loading} className="primary-btn">
           {loading ? 'Loading...' : 'Login'}
         </button>
-        <button
-          type="button"
-          className="guest-btn"
-          onClick={handleGuest}
-          disabled={guestLoading}
-        >
+        <button type="button" className="guest-btn" onClick={handleGuest} disabled={guestLoading}>
           {guestLoading ? 'Masuk sebagai guest...' : 'Masuk sebagai Guest'}
         </button>
         <Link href="/forgot-password" className="link">
