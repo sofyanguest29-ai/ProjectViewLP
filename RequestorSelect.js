@@ -1,105 +1,30 @@
 'use client'
-import { useState, useRef, useEffect } from 'react'
-import { createClient } from '@/lib/supabaseClient'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
-// selected: array of requestor names for this project
-// savedRequestors: [{ id, name }] - global reusable list from DB
-export default function RequestorSelect({ selected, onChange, savedRequestors, onRequestorsChanged }) {
-  const [open, setOpen] = useState(false)
-  const [query, setQuery] = useState('')
-  const wrapperRef = useRef(null)
-  const supabase = createClient()
+export default function RequestorSelect({ value, onChange, requestors, onAdd, onDelete }) {
+  const selected = useMemo(() => String(value || '').split(',').map((x) => x.trim()).filter(Boolean), [value])
+  const [open, setOpen] = useState(false); const [query, setQuery] = useState(''); const ref = useRef(null)
+  useEffect(() => { const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }; document.addEventListener('mousedown', h); return () => document.removeEventListener('mousedown', h) }, [])
+  const filtered = requestors.filter((r) => r.toLowerCase().includes(query.trim().toLowerCase()))
+  const exact = requestors.some((r) => r.toLowerCase() === query.trim().toLowerCase())
+  function toggle(name) { const next = selected.includes(name) ? selected.filter((n) => n !== name) : [...selected, name]; onChange(next.join(', ')) }
+  async function addNew() { const name = query.trim(); if (!name) return; const ok = await onAdd?.(name); if (ok !== false) { if (!selected.includes(name)) onChange([...selected, name].join(', ')); setQuery('') } }
+  function removeChip(name) { onChange(selected.filter((n) => n !== name).join(', ')) }
 
-  useEffect(() => {
-    function handleClickOutside(e) {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
-        setOpen(false)
-        setQuery('')
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
-  function toggleOption(name) {
-    if (selected.includes(name)) {
-      onChange(selected.filter((s) => s !== name))
-    } else {
-      onChange([...selected, name])
-    }
-  }
-
-  async function addNewRequestor() {
-    const name = query.trim()
-    if (!name) return
-    const { error } = await supabase.from('requestors').insert({ name })
-    if (!error) {
-      await onRequestorsChanged?.()
-      toggleOption(name)
-      setQuery('')
-    }
-  }
-
-  async function deleteRequestor(name, e) {
-    e.stopPropagation()
-    if (!confirm(`Hapus "${name}" dari daftar requestor tersimpan?`)) return
-    await supabase.from('requestors').delete().eq('name', name)
-    onChange(selected.filter((s) => s !== name))
-    await onRequestorsChanged?.()
-  }
-
-  const filtered = savedRequestors.filter((r) => r.name.toLowerCase().includes(query.toLowerCase()))
-  const exactMatch = savedRequestors.some((r) => r.name.toLowerCase() === query.trim().toLowerCase())
-
-  return (
-    <div className="multiselect" ref={wrapperRef}>
-      <button type="button" className="multiselect-trigger" onClick={() => setOpen((v) => !v)}>
-        {selected.length === 0 ? (
-          <span className="multiselect-placeholder">Pilih atau tambah requestor...</span>
-        ) : (
-          <span className="multiselect-tags">
-            {selected.map((s) => (
-              <span key={s} className="multiselect-tag">{s}</span>
-            ))}
-          </span>
-        )}
-        <span className="multiselect-caret">&#9662;</span>
-      </button>
-      {open && (
-        <div className="multiselect-dropdown">
-          <input
-            autoFocus
-            className="requestor-search-input"
-            placeholder="Cari atau ketik nama baru..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          {filtered.map((r) => (
-            <div key={r.id} className="multiselect-option requestor-option">
-              <label>
-                <input type="checkbox" checked={selected.includes(r.name)} onChange={() => toggleOption(r.name)} />
-                {r.name}
-              </label>
-              <button
-                type="button"
-                className="requestor-delete-btn"
-                onClick={(e) => deleteRequestor(r.name, e)}
-                title="Hapus dari daftar tersimpan"
-              >
-                &#128465;
-              </button>
-            </div>
-          ))}
-          {filtered.length === 0 && !query && (
-            <div className="tag-picker-empty">Belum ada requestor tersimpan.</div>
-          )}
-          {query.trim() && !exactMatch && (
-            <button type="button" className="requestor-add-btn" onClick={addNewRequestor}>
-              + Tambah &quot;{query.trim()}&quot;
-            </button>
-          )}
-        </div>
-      )}
+  return <div className="requestor-select" ref={ref}>
+    <div className="requestor-input-wrap" onClick={() => setOpen(true)}>
+      <div className="requestor-chips-input">
+        {selected.map((name) => <span className="requestor-chip" key={name}>{name}<button type="button" onClick={(e) => { e.stopPropagation(); removeChip(name) }} aria-label={`Hapus ${name}`}>×</button></span>)}
+        <input value={query} onChange={(e) => { setQuery(e.target.value); setOpen(true) }} onFocus={() => setOpen(true)} placeholder={selected.length ? 'Tambah requestor...' : 'Ketik atau pilih nama requestor...'} required={selected.length === 0} />
+      </div>
+      <button type="button" className="requestor-caret" onClick={(e) => { e.stopPropagation(); setOpen((v) => !v) }}>⌄</button>
     </div>
-  )
+    {open && <div className="requestor-dropdown">
+      <div className="requestor-dropdown-head"><span>Requestor tersimpan</span><button type="button" onClick={addNew} disabled={!query.trim() || exact}>＋ Tambah nama</button></div>
+      <div className="requestor-options">
+        {filtered.map((name) => <div key={name} className="requestor-option"><button type="button" className={`requestor-option-name ${selected.includes(name) ? 'selected' : ''}`} onClick={() => toggle(name)}><span className="requestor-check">{selected.includes(name) ? '✓' : ''}</span>{name}</button><button type="button" className="requestor-delete" onClick={() => onDelete?.(name)} title={`Hapus ${name}`}>🗑</button></div>)}
+        {filtered.length === 0 && <div className="requestor-empty">Belum ada nama yang cocok.</div>}
+      </div>
+    </div>}
+  </div>
 }
