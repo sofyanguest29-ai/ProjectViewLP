@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import Navbar from '@/components/Navbar'
 import FilterBar from '@/components/FilterBar'
+import ProjectSearchInput from '@/components/ProjectSearchInput'
 import CalendarView from '@/components/CalendarView'
 import LogDetailModal from '@/components/LogDetailModal'
 import { createClient } from '@/lib/supabaseClient'
@@ -80,12 +81,7 @@ export default function CalendarPage() {
         </div>
 
         <div className="dashboard-top-row">
-          <input
-            className="search-input"
-            placeholder="Cari ID atau nama project..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <ProjectSearchInput projects={projects} value={search} onChange={setSearch} />
         </div>
 
         <div className="dashboard-top">

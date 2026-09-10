@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import Navbar from '@/components/Navbar'
 import FilterBar from '@/components/FilterBar'
+import ProjectSearchInput from '@/components/ProjectSearchInput'
 import { PROJECT_STATUS } from '@/lib/constants'
 import { createClient } from '@/lib/supabaseClient'
 import { useCurrentUser } from '@/lib/useCurrentUser'
@@ -70,12 +71,7 @@ export default function KanbanPage() {
         </div>
 
         <div className="dashboard-top-row">
-          <input
-            className="search-input"
-            placeholder="Cari ID atau nama project..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <ProjectSearchInput projects={projects} value={search} onChange={setSearch} />
         </div>
 
         <div className="dashboard-top">

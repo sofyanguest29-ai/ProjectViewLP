@@ -992,9 +992,12 @@ body {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 6px;
+  flex-wrap: nowrap;
+  gap: 12px;
 }
 .devlog-section-header label {
   margin-bottom: 0;
+  white-space: nowrap;
 }
 .sort-arrow-btn {
   background: #f3f4f6;
@@ -1231,7 +1234,7 @@ body {
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 13px;
-  min-width: 150px;
+  min-width: 100px;
   height: 35px;
   box-sizing: border-box;
 }
@@ -1395,19 +1398,23 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
 }
 .devlog-filter-inline {
-  min-width: 160px;
+  width: 130px;
+  min-width: 130px;
+  flex-shrink: 0;
 }
 .devlog-filter-date {
   padding: 8px 10px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 13px;
-  width: 150px;
+  width: 130px;
   height: 35px;
   box-sizing: border-box;
+  flex-shrink: 0;
 }
 .devlog-add-icon-btn {
   background: #4f46e5;
@@ -1420,6 +1427,7 @@ body {
   font-weight: 700;
   cursor: pointer;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 /* ============ Dashboard add buttons + import ============ */

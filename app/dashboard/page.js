@@ -9,6 +9,7 @@ import RowMenu from '@/components/RowMenu'
 import StatusBadge from '@/components/StatusBadge'
 import ProjectModal from '@/components/ProjectModal'
 import RequestorTags from '@/components/RequestorTags'
+import ProjectSearchInput from '@/components/ProjectSearchInput'
 import { createClient } from '@/lib/supabaseClient'
 import { useCurrentUser } from '@/lib/useCurrentUser'
 import { computeStartDate, computeFinishDate } from '@/lib/projectDates'
@@ -109,12 +110,7 @@ export default function DashboardPage() {
       <Navbar />
       <main className="container container-wide">
         <div className="dashboard-top-row">
-          <input
-            className="search-input"
-            placeholder="Cari ID atau nama project..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <ProjectSearchInput projects={projects} value={search} onChange={setSearch} />
           <div className="view-switcher">
             <button type="button" onClick={() => setViewMenuOpen((v) => !v)}>
               Kanban / Calendar &#9662;
