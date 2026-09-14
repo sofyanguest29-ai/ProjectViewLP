@@ -316,11 +316,12 @@ body {
 }
 
 .calendar-cell {
-  min-height: 90px;
+  height: 92px;
   border: 1px solid #f1f1f1;
   border-radius: 8px;
   padding: 6px;
   font-size: 12px;
+  overflow: hidden;
 }
 
 .calendar-cell.outside-month {
@@ -684,7 +685,17 @@ body {
   margin-top: 12px;
 }
 .modal-footer-split {
-  justify-content: flex-end;
+  justify-content: space-between;
+}
+.detail-project-btn {
+  background: white;
+  color: #4f46e5;
+  border: 1px solid #4f46e5;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
 }
 
 .field-block {
@@ -1103,7 +1114,9 @@ body {
   background: #f4f5f7;
   border-radius: 12px;
   padding: 10px;
-  min-height: 400px;
+  min-height: 200px;
+  max-height: 75vh;
+  overflow-y: auto;
 }
 .kanban-column-over {
   background: #eef2ff;
@@ -1116,6 +1129,10 @@ body {
   margin-bottom: 10px;
   display: flex;
   justify-content: space-between;
+  position: sticky;
+  top: 0;
+  background: #f4f5f7;
+  z-index: 5;
 }
 .kanban-count {
   color: #9ca3af;
@@ -1400,18 +1417,19 @@ body {
   gap: 8px;
   flex-wrap: nowrap;
   flex-shrink: 0;
+  padding-right: 14px;
 }
 .devlog-filter-inline {
-  width: 130px;
-  min-width: 130px;
+  width: 115px;
+  min-width: 115px;
   flex-shrink: 0;
 }
 .devlog-filter-date {
-  padding: 8px 10px;
+  padding: 8px 6px;
   border: 1px solid #d1d5db;
   border-radius: 6px;
-  font-size: 13px;
-  width: 130px;
+  font-size: 12px;
+  width: 115px;
   height: 35px;
   box-sizing: border-box;
   flex-shrink: 0;
@@ -1456,4 +1474,39 @@ body {
   padding: 12px 14px;
   border-radius: 8px;
   margin-bottom: 16px;
+}
+
+/* ============ Pagination ============ */
+.pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+.pagination-btn {
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+}
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.pagination-info {
+  font-size: 13px;
+  color: #6b7280;
+}
+.page-size-select {
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  height: 35px;
+  box-sizing: border-box;
 }

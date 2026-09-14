@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { format } from 'date-fns'
+import { format, parseISO } from 'date-fns'
 import Navbar from '@/components/Navbar'
 import FilterBar from '@/components/FilterBar'
 import ProjectSearchInput from '@/components/ProjectSearchInput'
@@ -14,26 +14,28 @@ export default function CalendarPage() {
   const [logs, setLogs] = useState([])
   const [projects, setProjects] = useState([])
   const [savedRequestors, setSavedRequestors] = useState([])
+  const [savedDivisions, setSavedDivisions] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [selectedLog, setSelectedLog] = useState(null)
   const [filters, setFilters] = useState({ division: '', requestor: '', status: '', projectType: '' })
   const [search, setSearch] = useState('')
-  const [dateRange, setDateRange] = useState({ start: '', end: '' })
   const router = useRouter()
   const supabase = createClient()
   const { isGuest } = useCurrentUser()
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [{ data: l }, { data: p }, { data: r }] = await Promise.all([
+    const [{ data: l }, { data: p }, { data: r }, { data: d }] = await Promise.all([
       supabase.from('development_logs').select('*'),
       supabase.from('projects').select('*'),
       supabase.from('requestors').select('*').order('name'),
+      supabase.from('divisions').select('*').order('name'),
     ])
     setLogs(l ?? [])
     setProjects(p ?? [])
     setSavedRequestors(r ?? [])
+    setSavedDivisions(d ?? [])
     setLoading(false)
   }, [])
 
@@ -42,6 +44,7 @@ export default function CalendarPage() {
   }, [load])
 
   const requestorOptions = useMemo(() => savedRequestors.map((r) => r.name), [savedRequestors])
+  const divisionOptions = useMemo(() => savedDivisions.map((d) => d.name), [savedDivisions])
   const projectsById = useMemo(() => {
     const map = {}
     for (const proj of projects) map[proj.id] = proj
@@ -60,11 +63,9 @@ export default function CalendarPage() {
         const q = search.toLowerCase()
         if (!proj.project_code.includes(q) && !proj.title.toLowerCase().includes(q)) return false
       }
-      if (dateRange.start && l.log_date < dateRange.start) return false
-      if (dateRange.end && l.log_date > dateRange.end) return false
       return true
     })
-  }, [logs, projectsById, filters, dateRange, search])
+  }, [logs, projectsById, filters, search])
 
   const logsForSelectedDate = useMemo(() => {
     const key = format(selectedDate, 'yyyy-MM-dd')
@@ -85,21 +86,21 @@ export default function CalendarPage() {
         </div>
 
         <div className="dashboard-top">
-          <FilterBar filters={filters} onChange={setFilters} requestorOptions={requestorOptions} />
+          <FilterBar
+            filters={filters}
+            onChange={setFilters}
+            requestorOptions={requestorOptions}
+            divisionOptions={divisionOptions}
+            onClearExtra={() => setSearch('')}
+          />
           <div className="filter-group">
-            <label>Dari Tanggal</label>
+            <label>Pilih Tanggal</label>
             <input
               type="date"
-              value={dateRange.start}
-              onChange={(e) => setDateRange((r) => ({ ...r, start: e.target.value }))}
-            />
-          </div>
-          <div className="filter-group">
-            <label>Sampai Tanggal</label>
-            <input
-              type="date"
-              value={dateRange.end}
-              onChange={(e) => setDateRange((r) => ({ ...r, end: e.target.value }))}
+              value={format(selectedDate, 'yyyy-MM-dd')}
+              onChange={(e) => {
+                if (e.target.value) setSelectedDate(parseISO(e.target.value))
+              }}
             />
           </div>
         </div>

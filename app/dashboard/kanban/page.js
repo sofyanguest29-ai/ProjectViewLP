@@ -12,6 +12,7 @@ import { useCurrentUser } from '@/lib/useCurrentUser'
 export default function KanbanPage() {
   const [projects, setProjects] = useState([])
   const [savedRequestors, setSavedRequestors] = useState([])
+  const [savedDivisions, setSavedDivisions] = useState([])
   const [loading, setLoading] = useState(true)
   const [filters, setFilters] = useState({ division: '', requestor: '', status: '', projectType: '' })
   const [search, setSearch] = useState('')
@@ -21,12 +22,14 @@ export default function KanbanPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [{ data: p }, { data: r }] = await Promise.all([
+    const [{ data: p }, { data: r }, { data: d }] = await Promise.all([
       supabase.from('projects').select('*').order('created_at', { ascending: false }),
       supabase.from('requestors').select('*').order('name'),
+      supabase.from('divisions').select('*').order('name'),
     ])
     setProjects(p ?? [])
     setSavedRequestors(r ?? [])
+    setSavedDivisions(d ?? [])
     setLoading(false)
   }, [])
 
@@ -35,6 +38,7 @@ export default function KanbanPage() {
   }, [load])
 
   const requestorOptions = useMemo(() => savedRequestors.map((r) => r.name), [savedRequestors])
+  const divisionOptions = useMemo(() => savedDivisions.map((d) => d.name), [savedDivisions])
 
   const filteredProjects = useMemo(() => {
     return projects.filter((p) => {
@@ -75,7 +79,7 @@ export default function KanbanPage() {
         </div>
 
         <div className="dashboard-top">
-          <FilterBar filters={filters} onChange={setFilters} requestorOptions={requestorOptions} />
+          <FilterBar filters={filters} onChange={setFilters} requestorOptions={requestorOptions} divisionOptions={divisionOptions} onClearExtra={() => setSearch('')} />
         </div>
 
         {loading ? (

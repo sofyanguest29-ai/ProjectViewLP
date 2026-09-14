@@ -1,55 +1,50 @@
-# Project Monitor v2
+# Project Monitor v4
 
 Aplikasi internal untuk monitoring project. Stack: Next.js (App Router) + Supabase (Auth + Database), deploy ke Vercel.
 
 ## Fitur
 
-- Login, Guest mode, show/hide password
-- Forgot password via email (reset ke halaman New Password + Confirm New Password, min 8 karakter)
-- List project: kolom No, ID Project (4 digit unik), Nama Project, Requestor, Divisi, Status
-- Filter searchable (Divisi / Requestor / Status) + SLA Status (status/count ke status/count) + Search
-- Add/Edit Project via popup: Judul, Objective, Expected Result, multi-requestor dropdown, Divisi, Impact, Requirements rich text + tag project, 4 kuisioner Impact Measurement, Development Log dengan detail rich text
-- Titik tiga per baris project: Edit / Delete / Ubah Status
-- Double-click baris -> halaman detail project; Log Development bisa sort terbaru/terlama, filter status/tanggal, tambah log, edit detail rich text, dan tag project
-- Kanban view: drag & drop card antar kolom status (Completed / In Progress / Hold / Cancel / Backlog)
-- Calendar view: kalender bulan (atas) + list development log pada tanggal yang diklik (bawah)
+- Login, Guest mode (view-only via database RLS), show/hide password (icon mata)
+- Forgot password via email -> New Password + Confirm New Password (min 8 karakter)
+- List project: No, ID Project, Nama Project, **Project Type**, Requestor (tags + tooltip), Divisi, Status, **Start Date**, **Finish Date**
+- Filter Divisi/Requestor/Status/**Project Type** (bisa diketik/searchable) + tombol hapus semua filter
+- Search ID/nama project
+- Add/Edit Project popup: Judul, **Project Type**, Objective (rich text), Expected Result (rich text), Requestor (multi-select + kelola daftar tersimpan), Divisi (multi-select), **Impact Measurement** (Cost/Accuracy/Speed, masing-masing rich text), Requirements (rich text + tag project), Development Log (tanggal + judul + status + detail rich text show/hide), Status Project, **Priority Scoring** (4 pertanyaan) -> otomatis hitung **Priority** (High/Medium/Low)
+- Titik tiga per baris (layer paling atas): Edit / Delete / Ubah Status
+- Double-click baris -> halaman detail: Project Type, Objective, Start Date & Finish Date (dihitung otomatis dari Development Log: Start = tanggal terlama status Identify, Finish = tanggal terbaru status Improve), Expected Result, Requestor, Divisi, Impact Measurement, Requirements, Priority Scoring, Development Log (filter status & tanggal, sort terbaru/terlama, tombol tambah log)
+- Kanban view: filter sama seperti halaman utama, drag & drop antar status
+- Calendar view: filter sama seperti halaman utama + filter rentang tanggal (dari - sampai)
 
 ## 1. Setup Supabase
 
 1. Buat project baru di https://supabase.com (gratis).
-2. Buka **SQL Editor**, copy-paste isi `supabase/schema.sql`, Run. Ini membuat tabel `projects`, `development_logs`, dan semua RLS policy-nya (termasuk aturan guest hanya boleh lihat, tidak boleh edit/hapus).
-3. Jalankan schema SQL terbaru di `supabase/schema.sql` (aman untuk schema lama karena memakai `if not exists`/`add column if not exists`). Ini menambahkan `requestors`, `impact_measurement`, dan `status_count`.
-
-4. Aktifkan **Guest Mode**: buka **Authentication -> Sign In / Providers**, cari **Anonymous Sign-Ins**, aktifkan. Kalau ini tidak diaktifkan, tombol "Masuk sebagai Guest" akan error.
-5. Buka **Authentication -> URL Configuration**:
-   - **Site URL**: isi domain kamu (`http://localhost:3000` untuk lokal, atau domain Vercel untuk production)
-   - **Redirect URLs**: tambahkan `.../update-password` (baik untuk localhost maupun domain production) — wajib supaya link reset password mengarah ke halaman yang benar.
-6. Buka **Project Settings -> API**, catat `Project URL` dan `anon public` key.
+2. Buka **SQL Editor**, copy-paste isi `supabase/schema.sql`, Run. Aman dijalankan berkali-kali (idempotent), termasuk untuk upgrade dari versi manapun sebelumnya.
+3. Aktifkan **Guest Mode**: **Authentication -> Sign In / Providers -> Anonymous Sign-Ins**.
+4. **Authentication -> URL Configuration**: isi Site URL + Redirect URL `.../update-password`.
+5. **Project Settings -> API**: catat `Project URL` dan `anon public` key.
 
 ## 2. Buat User Pertama
 
-**Authentication -> Users -> Add user** — isi email + password, centang "Auto Confirm User". Ulangi untuk tiap anggota tim.
+**Authentication -> Users -> Add user** — isi email + password, centang "Auto Confirm User".
 
 ## 3. Deploy ke Vercel
 
-1. Push semua file ini ke repo GitHub (drag & drop lewat github.com kalau tidak mau pakai command line).
+1. Push semua file ke repo GitHub.
 2. Import repo di vercel.com.
 3. Tambahkan Environment Variables: `NEXT_PUBLIC_SUPABASE_URL` dan `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
-4. Deploy. Setelah dapat domain, balik ke Supabase -> Authentication -> URL Configuration, update Site URL & Redirect URLs pakai domain production.
+4. Deploy.
 
 ## Struktur Halaman
 
-- `/login` — login + guest mode + show/hide password
-- `/forgot-password` — kirim email reset
-- `/update-password` — set password baru (New Password + Confirm New Password)
-- `/dashboard` — list project + filter + search + add/edit modal
-- `/dashboard/project/[id]` — detail project + development log
-- `/dashboard/kanban` — board drag & drop per status
-- `/dashboard/calendar` — kalender + list development log per tanggal
+- `/login`, `/forgot-password`, `/update-password`
+- `/dashboard` — list, filter, search, add/edit modal
+- `/dashboard/project/[id]` — detail + development log
+- `/dashboard/kanban` — board drag & drop + filter
+- `/dashboard/calendar` — kalender + filter + date range
 
 ## Catatan
 
-- ID Project (4 digit) dibuat otomatis & unik saat project baru dibuat.
-- Guest bisa login dan **lihat semua data**, tapi **tidak bisa** create/edit/delete/ubah status (dibatasi lewat Row Level Security di database, bukan cuma di tampilan — jadi aman meski guest coba akses API langsung).
-- Tag project di field Requirements murni referensi teks (bukan link ke halaman lain) — klik tombol "@ Tag Project" di toolbar untuk cari & sisipkan.
-- Kalau field development log di form Add/Edit project diisi kosong (tanggal/judul kosong), baris itu otomatis diabaikan saat submit.
+- Guest hanya bisa **lihat**, tidak bisa create/edit/delete apapun (dibatasi di level database).
+- Nama requestor yang pernah diketik otomatis tersimpan ke daftar global (tabel `requestors`) untuk dipakai lagi.
+- Start Date & Finish Date di halaman utama/detail dihitung otomatis dari Development Log, bukan input manual.
+- Status pada Development Log ditampilkan apa adanya (tanpa nomor urut).

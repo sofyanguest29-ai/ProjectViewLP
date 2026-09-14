@@ -1,5 +1,5 @@
 'use client'
-import { DIVISIONS, PROJECT_STATUS, PROJECT_TYPES } from '@/lib/constants'
+import { PROJECT_STATUS, PROJECT_TYPES, PAGE_SIZE_OPTIONS } from '@/lib/constants'
 import SearchableSelect from './SearchableSelect'
 
 const EMPTY_FILTERS = { division: '', requestor: '', status: '', projectType: '' }
@@ -12,16 +12,25 @@ function FilterIcon() {
   )
 }
 
-export default function FilterBar({ filters, onChange, requestorOptions }) {
+export default function FilterBar({
+  filters,
+  onChange,
+  requestorOptions,
+  divisionOptions = [],
+  onClearExtra,
+  pageSize,
+  onPageSizeChange,
+}) {
   function update(field, value) {
     onChange({ ...filters, [field]: value })
   }
 
   function clearAll() {
     onChange({ ...EMPTY_FILTERS })
+    onClearExtra?.()
   }
 
-  const divisionOptions = DIVISIONS.map((d) => ({ value: d, label: d }))
+  const divisionSelectOptions = divisionOptions.map((d) => ({ value: d, label: d }))
   const statusOptions = PROJECT_STATUS.map((s) => ({ value: s.value, label: s.label }))
   const requestorSelectOptions = requestorOptions.map((r) => ({ value: r, label: r }))
   const projectTypeOptions = PROJECT_TYPES.map((t) => ({ value: t, label: t }))
@@ -31,7 +40,7 @@ export default function FilterBar({ filters, onChange, requestorOptions }) {
       <div className="filter-group">
         <label>Divisi</label>
         <SearchableSelect
-          options={divisionOptions}
+          options={divisionSelectOptions}
           value={filters.division}
           onChange={(v) => update('division', v)}
           allLabel="Semua Divisi"
@@ -68,6 +77,16 @@ export default function FilterBar({ filters, onChange, requestorOptions }) {
           placeholder="Cari project type..."
         />
       </div>
+      {pageSize !== undefined && onPageSizeChange && (
+        <div className="filter-group">
+          <label>Tampilkan</label>
+          <select className="page-size-select" value={pageSize} onChange={(e) => onPageSizeChange(Number(e.target.value))}>
+            {PAGE_SIZE_OPTIONS.map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+        </div>
+      )}
       <div className="filter-group filter-clear-group">
         <label>&nbsp;</label>
         <button type="button" className="filter-clear-btn" onClick={clearAll} title="Hapus semua filter">

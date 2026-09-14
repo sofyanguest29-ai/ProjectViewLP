@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabaseClient'
 import { DEV_LOG_STATUS } from '@/lib/constants'
 import { format, parseISO } from 'date-fns'
@@ -7,6 +8,7 @@ import RichTextEditor from './RichTextEditor'
 
 export default function LogDetailModal({ log, isGuest, allProjects = [], onClose, onSaved }) {
   const supabase = createClient()
+  const router = useRouter()
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState(log.title)
   const [status, setStatus] = useState(log.status)
@@ -23,6 +25,11 @@ export default function LogDetailModal({ log, isGuest, allProjects = [], onClose
     setSaving(false)
     setEditing(false)
     onSaved?.()
+  }
+
+  function handleViewProject() {
+    onClose?.()
+    router.push(`/dashboard/project/${log.project_id}`)
   }
 
   return (
@@ -73,6 +80,9 @@ export default function LogDetailModal({ log, isGuest, allProjects = [], onClose
           </div>
 
           <div className="modal-footer modal-footer-split">
+            <button type="button" className="detail-project-btn" onClick={handleViewProject}>
+              Detail Project
+            </button>
             {isGuest ? (
               <span className="guest-badge">View Only</span>
             ) : editing ? (

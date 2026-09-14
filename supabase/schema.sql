@@ -11,6 +11,12 @@ create table if not exists public.requestors (
   created_at timestamptz default now()
 );
 
+create table if not exists public.divisions (
+  id uuid primary key default gen_random_uuid(),
+  name text unique not null,
+  created_at timestamptz default now()
+);
+
 create table if not exists public.projects (
   id uuid primary key default gen_random_uuid(),
   project_code text unique not null,
@@ -54,6 +60,7 @@ alter table public.development_logs add column if not exists detail text;
 alter table public.projects enable row level security;
 alter table public.development_logs enable row level security;
 alter table public.requestors enable row level security;
+alter table public.divisions enable row level security;
 
 -- Semua user yang login (termasuk guest/anonymous) boleh LIHAT semua data
 drop policy if exists "view all projects" on public.projects;
@@ -66,6 +73,10 @@ create policy "view all logs" on public.development_logs
 
 drop policy if exists "view all requestors" on public.requestors;
 create policy "view all requestors" on public.requestors
+  for select using (auth.role() = 'authenticated');
+
+drop policy if exists "view all divisions" on public.divisions;
+create policy "view all divisions" on public.divisions
   for select using (auth.role() = 'authenticated');
 
 -- Hanya user BUKAN guest yang boleh insert/update/delete
@@ -100,6 +111,22 @@ create policy "insert requestors non guest" on public.requestors
 drop policy if exists "delete requestors non guest" on public.requestors;
 create policy "delete requestors non guest" on public.requestors
   for delete using (coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false);
+
+-- Divisi bisa DITAMBAH oleh user bukan-guest, tapi TIDAK BISA dihapus (sengaja
+-- tidak ada delete policy untuk tabel ini).
+drop policy if exists "insert divisions non guest" on public.divisions;
+create policy "insert divisions non guest" on public.divisions
+  for insert with check (coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false);
+
+-- Isi 6 divisi default (aman dijalankan berkali-kali)
+insert into public.divisions (name) values
+  ('Operation Excellence'),
+  ('Linehaul'),
+  ('FLM'),
+  ('Airfreight & RA'),
+  ('Sortation'),
+  ('Operation & Cost Quality')
+on conflict (name) do nothing;
 
 -- ============================================================
 -- MIGRASI dari v2 (kolom "requestor" single text -> "requestors" array)

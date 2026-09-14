@@ -1,8 +1,8 @@
 'use client'
 import { useState, useMemo } from 'react'
 import { createClient } from '@/lib/supabaseClient'
-import { DIVISIONS, PROJECT_STATUS, PROJECT_TYPES, QUESTIONNAIRE, randomProjectCode, impactBand } from '@/lib/constants'
-import MultiSelect from './MultiSelect'
+import { PROJECT_STATUS, PROJECT_TYPES, QUESTIONNAIRE, randomProjectCode, impactBand } from '@/lib/constants'
+import DivisionSelect from './DivisionSelect'
 import RequestorSelect from './RequestorSelect'
 import ImpactSelect from './ImpactSelect'
 import RichTextEditor from './RichTextEditor'
@@ -15,6 +15,8 @@ export default function ProjectModal({
   allProjects = [],
   savedRequestors = [],
   onRequestorsChanged,
+  savedDivisions = [],
+  onDivisionsChanged,
   onClose,
   onSaved,
 }) {
@@ -182,7 +184,12 @@ export default function ProjectModal({
 
           <div className="field-block">
             <label>Divisi</label>
-            <MultiSelect options={DIVISIONS} selected={divisions} onChange={setDivisions} placeholder="Pilih divisi (bisa lebih dari 1)" />
+            <DivisionSelect
+              selected={divisions}
+              onChange={setDivisions}
+              savedDivisions={savedDivisions}
+              onDivisionsChanged={onDivisionsChanged}
+            />
           </div>
 
           <div className="field-block">

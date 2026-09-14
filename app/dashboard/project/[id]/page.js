@@ -22,6 +22,7 @@ export default function ProjectDetailPage() {
   const [logs, setLogs] = useState([])
   const [allProjects, setAllProjects] = useState([])
   const [savedRequestors, setSavedRequestors] = useState([])
+  const [savedDivisions, setSavedDivisions] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedLog, setSelectedLog] = useState(null)
   const [editing, setEditing] = useState(false)
@@ -31,16 +32,18 @@ export default function ProjectDetailPage() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [{ data: p }, { data: l }, { data: all }, { data: reqs }] = await Promise.all([
+    const [{ data: p }, { data: l }, { data: all }, { data: reqs }, { data: divs }] = await Promise.all([
       supabase.from('projects').select('*').eq('id', id).single(),
       supabase.from('development_logs').select('*').eq('project_id', id).order('log_date', { ascending: false }),
       supabase.from('projects').select('*'),
       supabase.from('requestors').select('*').order('name'),
+      supabase.from('divisions').select('*').order('name'),
     ])
     setProject(p)
     setLogs(l ?? [])
     setAllProjects(all ?? [])
     setSavedRequestors(reqs ?? [])
+    setSavedDivisions(divs ?? [])
     setLoading(false)
   }, [id])
 
@@ -268,6 +271,8 @@ export default function ProjectDetailPage() {
           allProjects={allProjects}
           savedRequestors={savedRequestors}
           onRequestorsChanged={load}
+          savedDivisions={savedDivisions}
+          onDivisionsChanged={load}
           onClose={() => setEditing(false)}
           onSaved={load}
         />
