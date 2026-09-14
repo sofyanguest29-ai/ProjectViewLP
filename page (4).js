@@ -1,26 +1,255 @@
 'use client'
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
+import Link from 'next/link'
+import { format, parseISO } from 'date-fns'
 import Navbar from '@/components/Navbar'
 import FilterBar from '@/components/FilterBar'
-import { PROJECT_STATUS } from '@/lib/constants'
-import { slaOptions, getSla } from '@/lib/sla'
-import SearchableSelect from '@/components/SearchableSelect'
+import RowMenu from '@/components/RowMenu'
+import StatusBadge from '@/components/StatusBadge'
+import ProjectModal from '@/components/ProjectModal'
+import RequestorTags from '@/components/RequestorTags'
+import ProjectSearchInput from '@/components/ProjectSearchInput'
 import { createClient } from '@/lib/supabaseClient'
 import { useCurrentUser } from '@/lib/useCurrentUser'
+import { computeStartDate, computeFinishDate } from '@/lib/projectDates'
 
-export default function KanbanPage() {
-  const [projects, setProjects] = useState([]); const [logs, setLogs] = useState([]); const [requestors, setRequestors] = useState([]); const [loading, setLoading] = useState(true); const [search, setSearch] = useState(''); const [filters, setFilters] = useState({ division:'', requestor:'', status:'' })
-  const router = useRouter(); const supabase = createClient(); const { isGuest } = useCurrentUser()
-  const load = useCallback(async () => { setLoading(true); const [{ data:p }, { data:l }, { data:r }] = await Promise.all([supabase.from('projects').select('*').order('created_at', { ascending:false }), supabase.from('development_logs').select('*'), supabase.from('requestors').select('name').order('name')]); setProjects(p ?? []); setLogs(l ?? []); setRequestors((r ?? []).map(x=>x.name)); setLoading(false) }, [])
-  useEffect(() => { load() }, [load])
-  const requestorOptions = useMemo(() => [...new Set([...requestors, ...projects.flatMap(p=>String(p.requestor||'').split(',').map(n=>n.trim()).filter(Boolean))])].sort((a,b)=>a.localeCompare(b)), [requestors,projects])
-  const logsByProject = useMemo(() => logs.reduce((a,l)=>(a[l.project_id] ||= []).push(l), a), [logs]); const slaChoices = useMemo(() => slaOptions(logs), [logs])
-  const [sla, setSla] = useState({from:'',to:''})
-  const filtered = useMemo(() => projects.filter(p => { if(filters.division && !(p.divisions??[]).includes(filters.division)) return false; if(filters.requestor && !String(p.requestor||'').split(',').map(x=>x.trim()).includes(filters.requestor)) return false; if(filters.status && p.status!==filters.status) return false; if(sla.from || sla.to){ if(!sla.from || !sla.to || getSla(logsByProject[p.id]||[], sla.from, sla.to)==null) return false; } if(search){const q=search.toLowerCase(); if(!String(p.project_code).includes(q)&&!p.title.toLowerCase().includes(q)&&!String(p.requestor).toLowerCase().includes(q)) return false} return true }), [projects,filters,search,sla,logsByProject])
-  async function handleDragEnd(result){ if(isGuest)return; const {source,destination,draggableId}=result; if(!destination||source.droppableId===destination.droppableId)return; const newStatus=destination.droppableId; setProjects(prev=>prev.map(p=>p.id===draggableId?{...p,status:newStatus}:p)); await supabase.from('projects').update({status:newStatus}).eq('id',draggableId) }
-  return <><Navbar/><main className="container container-wide"><div className="kanban-header"><div><h1>Kanban {isGuest&&<span className="guest-badge">View Only</span>}</h1><div className="kanban-filters"><FilterBar filters={filters} onChange={setFilters} requestorOptions={requestorOptions} compact/><div className="sla-filter-fields"><SearchableSelect value={sla.from} onChange={v=>setSla({...sla,from:v})} options={slaChoices} placeholder="SLA dari"/><span>→</span><SearchableSelect value={sla.to} onChange={v=>setSla({...sla,to:v})} options={slaChoices} placeholder="SLA ke"/></div><input className="search-input" placeholder="Cari project/requestor..." value={search} onChange={e=>setSearch(e.target.value)}/></div></div><button type="button" className="back-link" onClick={()=>router.push('/dashboard')}>&larr; Kembali ke List</button></div>
-  {loading?<p>Memuat...</p>:<DragDropContext onDragEnd={handleDragEnd}><div className="kanban-board">{PROJECT_STATUS.map(col=><Droppable droppableId={col.value} key={col.value}>{(provided,snapshot)=><div className={`kanban-column ${snapshot.isDraggingOver?'kanban-column-over':''}`} ref={provided.innerRef} {...provided.droppableProps}><div className="kanban-column-header" style={{borderColor:col.color}}>{col.label}<span className="kanban-count">{filtered.filter(p=>p.status===col.value).length}</span></div><div className="kanban-column-body">{filtered.filter(p=>p.status===col.value).map((p,index)=><Draggable draggableId={p.id} index={index} key={p.id} isDragDisabled={isGuest}>{(dp,ds)=><div ref={dp.innerRef} {...dp.draggableProps} {...dp.dragHandleProps} className={`kanban-card ${ds.isDragging?'kanban-card-dragging':''}`} onClick={()=>router.push(`/dashboard/project/${p.id}`)}><div className="kanban-card-code">#{p.project_code}</div><div className="kanban-card-title">{p.title}</div><div className="kanban-card-meta">{String(p.requestor||'').split(',').map(x=>x.trim()).filter(Boolean).slice(0,3).join(', ')}{String(p.requestor||'').split(',').filter(x=>x.trim()).length>3?' ...':''}</div></div>}</Draggable>)}{provided.placeholder}</div></div>}</Droppable>)}</div></DragDropContext>}
-  </main></>
+export default function DashboardPage() {
+  const [projects, setProjects] = useState([])
+  const [allLogs, setAllLogs] = useState([])
+  const [savedRequestors, setSavedRequestors] = useState([])
+  const [savedDivisions, setSavedDivisions] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [filters, setFilters] = useState({ division: '', requestor: '', status: '', projectType: '' })
+  const [pageSize, setPageSize] = useState(10)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [viewMenuOpen, setViewMenuOpen] = useState(false)
+  const [modalMode, setModalMode] = useState(null)
+  const [editingProject, setEditingProject] = useState(null)
+  const [editingLogs, setEditingLogs] = useState([])
+  const router = useRouter()
+  const supabase = createClient()
+  const { isGuest } = useCurrentUser()
+
+  const loadProjects = useCallback(async () => {
+    setLoading(true)
+    const [{ data: p }, { data: l }, { data: r }, { data: d }] = await Promise.all([
+      supabase.from('projects').select('*').order('created_at', { ascending: false }),
+      supabase.from('development_logs').select('*'),
+      supabase.from('requestors').select('*').order('name'),
+      supabase.from('divisions').select('*').order('name'),
+    ])
+    setProjects(p ?? [])
+    setAllLogs(l ?? [])
+    setSavedRequestors(r ?? [])
+    setSavedDivisions(d ?? [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => {
+    loadProjects()
+  }, [loadProjects])
+
+  const requestorOptions = useMemo(() => savedRequestors.map((r) => r.name), [savedRequestors])
+  const divisionOptions = useMemo(() => savedDivisions.map((d) => d.name), [savedDivisions])
+
+  const logsByProject = useMemo(() => {
+    const map = {}
+    for (const log of allLogs) {
+      if (!map[log.project_id]) map[log.project_id] = []
+      map[log.project_id].push(log)
+    }
+    return map
+  }, [allLogs])
+
+  const filteredProjects = useMemo(() => {
+    return projects.filter((p) => {
+      if (filters.division && !(p.divisions ?? []).includes(filters.division)) return false
+      if (filters.requestor && !(p.requestors ?? []).includes(filters.requestor)) return false
+      if (filters.status && p.status !== filters.status) return false
+      if (filters.projectType && p.project_type !== filters.projectType) return false
+      if (search) {
+        const q = search.toLowerCase()
+        if (!p.project_code.includes(q) && !p.title.toLowerCase().includes(q)) return false
+      }
+      return true
+    })
+  }, [projects, filters, search])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filters, search, pageSize])
+
+  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / pageSize))
+  const paginatedProjects = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredProjects.slice(start, start + pageSize)
+  }, [filteredProjects, currentPage, pageSize])
+
+  async function handleDelete(project) {
+    if (!confirm(`Hapus project "${project.title}"?`)) return
+    await supabase.from('projects').delete().eq('id', project.id)
+    loadProjects()
+  }
+
+  async function handleChangeStatus(project, status) {
+    await supabase.from('projects').update({ status }).eq('id', project.id)
+    loadProjects()
+  }
+
+  async function openEdit(project) {
+    const { data: logs } = await supabase
+      .from('development_logs')
+      .select('*')
+      .eq('project_id', project.id)
+      .order('log_date', { ascending: true })
+    setEditingProject(project)
+    setEditingLogs(logs ?? [])
+    setModalMode('edit')
+  }
+
+  function openAdd() {
+    setEditingProject(null)
+    setEditingLogs([])
+    setModalMode('add')
+  }
+
+  function closeModal() {
+    setModalMode(null)
+    setEditingProject(null)
+    setEditingLogs([])
+  }
+
+  return (
+    <>
+      <Navbar />
+      <main className="container container-wide">
+        <div className="dashboard-top-row">
+          <ProjectSearchInput projects={projects} value={search} onChange={setSearch} />
+          <div className="view-switcher">
+            <button type="button" onClick={() => setViewMenuOpen((v) => !v)}>
+              Kanban / Calendar &#9662;
+            </button>
+            {viewMenuOpen && (
+              <div className="view-switcher-dropdown">
+                <Link href="/dashboard/kanban">Kanban View</Link>
+                <Link href="/dashboard/calendar">Calendar View</Link>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="dashboard-top-row">
+          <FilterBar
+            filters={filters}
+            onChange={setFilters}
+            requestorOptions={requestorOptions}
+            divisionOptions={divisionOptions}
+            onClearExtra={() => setSearch('')}
+            pageSize={pageSize}
+            onPageSizeChange={setPageSize}
+          />
+          {!isGuest && (
+            <button type="button" className="add-project-link" onClick={openAdd}>
+              + Add New Project
+            </button>
+          )}
+        </div>
+
+        {loading ? (
+          <p>Memuat...</p>
+        ) : (
+          <>
+            <table className="project-table full-table">
+              <thead>
+                <tr>
+                  <th>No</th>
+                  <th>ID Project</th>
+                  <th>Nama Project</th>
+                  <th>Project Type</th>
+                  <th>Nama Requestor</th>
+                  <th>Divisi</th>
+                  <th>Status Project</th>
+                  <th>Start Date</th>
+                  <th>Finish Date</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedProjects.map((p, index) => {
+                  const projLogs = logsByProject[p.id] ?? []
+                  const startDate = computeStartDate(projLogs)
+                  const finishDate = computeFinishDate(projLogs)
+                  return (
+                    <tr key={p.id} onDoubleClick={() => router.push(`/dashboard/project/${p.id}`)}>
+                      <td>{(currentPage - 1) * pageSize + index + 1}</td>
+                      <td>#{p.project_code}</td>
+                      <td>{p.title}</td>
+                      <td>{p.project_type || '-'}</td>
+                      <td><RequestorTags names={p.requestors ?? []} /></td>
+                      <td>{(p.divisions ?? []).join(', ')}</td>
+                      <td><StatusBadge status={p.status} /></td>
+                      <td>{startDate ? format(parseISO(startDate), 'd MMM yyyy') : '-'}</td>
+                      <td>{finishDate ? format(parseISO(finishDate), 'd MMM yyyy') : '-'}</td>
+                      <td>
+                        <RowMenu
+                          isGuest={isGuest}
+                          onEdit={() => openEdit(p)}
+                          onDelete={() => handleDelete(p)}
+                          onChangeStatus={(status) => handleChangeStatus(p, status)}
+                        />
+                      </td>
+                    </tr>
+                  )
+                })}
+                {paginatedProjects.length === 0 && (
+                  <tr>
+                    <td colSpan={10} className="empty-state">Tidak ada project.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+
+            <div className="pagination-bar">
+              <button
+                type="button"
+                className="pagination-btn"
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage <= 1}
+              >
+                &larr; Prev
+              </button>
+              <span className="pagination-info">
+                Halaman {currentPage} dari {totalPages} ({filteredProjects.length} project)
+              </span>
+              <button
+                type="button"
+                className="pagination-btn"
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage >= totalPages}
+              >
+                Next &rarr;
+              </button>
+            </div>
+          </>
+        )}
+      </main>
+
+      {modalMode && (
+        <ProjectModal
+          mode={modalMode}
+          project={editingProject}
+          existingLogs={editingLogs}
+          allProjects={projects}
+          savedRequestors={savedRequestors}
+          onRequestorsChanged={loadProjects}
+          savedDivisions={savedDivisions}
+          onDivisionsChanged={loadProjects}
+          onClose={closeModal}
+          onSaved={loadProjects}
+        />
+      )}
+    </>
+  )
 }

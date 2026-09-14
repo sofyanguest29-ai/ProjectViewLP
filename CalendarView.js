@@ -1,5 +1,5 @@
 'use client'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   startOfMonth,
   endOfMonth,
@@ -13,9 +13,16 @@ import {
   subMonths,
 } from 'date-fns'
 import { id } from 'date-fns/locale'
+import { devLogStatusMeta } from '@/lib/constants'
 
 export default function CalendarView({ logs, selectedDate, onSelectDate }) {
   const [currentMonth, setCurrentMonth] = useState(selectedDate ?? new Date())
+
+  // Kalau selectedDate berubah dari luar (misal lewat filter "Pilih Tanggal"),
+  // ikut pindah tampilan bulan ke bulan tanggal tersebut.
+  useEffect(() => {
+    if (selectedDate) setCurrentMonth(selectedDate)
+  }, [selectedDate])
 
   const days = useMemo(() => {
     const start = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 1 })
@@ -60,11 +67,19 @@ export default function CalendarView({ logs, selectedDate, onSelectDate }) {
               onClick={() => onSelectDate(day)}
             >
               <div className="cell-date">{format(day, 'd')}</div>
-              {dayLogs.slice(0, 3).map((log) => (
-                <div key={log.id} className="cell-event" title={log.title}>
-                  {log.title}
-                </div>
-              ))}
+              {dayLogs.slice(0, 3).map((log) => {
+                const meta = devLogStatusMeta(log.status)
+                return (
+                  <div
+                    key={log.id}
+                    className="cell-event"
+                    style={{ color: meta.color, background: meta.bg }}
+                    title={log.title}
+                  >
+                    {log.title}
+                  </div>
+                )
+              })}
               {dayLogs.length > 3 && <div className="cell-event-more">+{dayLogs.length - 3} lagi</div>}
             </button>
           )

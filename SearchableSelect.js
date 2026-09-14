@@ -1,64 +1,73 @@
 'use client'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 
-export default function SearchableSelect({ value, onChange, options = [], placeholder = 'Pilih...', allowClear = true, className = '', renderOption, noResultsText = 'Tidak ada pilihan' }) {
+// options: [{ value, label }]
+export default function SearchableSelect({ options, value, onChange, placeholder = 'Cari...', allLabel = 'Semua' }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const ref = useRef(null)
+  const wrapperRef = useRef(null)
 
   useEffect(() => {
-    const handler = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) setOpen(false)
+    function handleClickOutside(e) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setOpen(false)
+        setQuery('')
+      }
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return options
-    return options.filter((option) => {
-      const label = typeof option === 'string' ? option : option.label
-      const val = typeof option === 'string' ? option : option.value
-      return `${label} ${val}`.toLowerCase().includes(q)
-    })
+    if (!query) return options
+    return options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase()))
   }, [options, query])
 
-  const selectedOption = options.find((o) => (typeof o === 'string' ? o : o.value) === value)
-  const selectedLabel = selectedOption ? (typeof selectedOption === 'string' ? selectedOption : selectedOption.label) : ''
+  const selectedLabel = options.find((o) => String(o.value) === String(value))?.label ?? allLabel
 
   return (
-    <div className={`searchable-select ${className}`} ref={ref}>
-      <button type="button" className="searchable-select-trigger" onClick={() => { setOpen((v) => !v); setQuery('') }}>
-        <span className={selectedLabel ? '' : 'searchable-select-placeholder'}>{selectedLabel || placeholder}</span>
-        <span className="searchable-select-caret">⌄</span>
-      </button>
+    <div className="searchable-select" ref={wrapperRef}>
+      <input
+        className="searchable-select-input"
+        value={open ? query : (value ? selectedLabel : '')}
+        onChange={(e) => {
+          setQuery(e.target.value)
+          setOpen(true)
+        }}
+        onFocus={() => {
+          setOpen(true)
+          setQuery('')
+        }}
+        placeholder={value ? selectedLabel : placeholder}
+      />
       {open && (
-        <div className="searchable-select-menu">
-          <input
-            autoFocus
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Ketik untuk mencari..."
-            className="searchable-select-search"
-          />
-          <div className="searchable-select-options">
-            {allowClear && !query && (
-              <button type="button" className={`searchable-select-option ${!value ? 'selected' : ''}`} onClick={() => { onChange(''); setOpen(false) }}>
-                Semua / kosong
-              </button>
-            )}
-            {filtered.map((option) => {
-              const optionValue = typeof option === 'string' ? option : option.value
-              const optionLabel = typeof option === 'string' ? option : option.label
-              return (
-                <button type="button" key={optionValue} className={`searchable-select-option ${value === optionValue ? 'selected' : ''}`} onClick={() => { onChange(optionValue); setOpen(false) }}>
-                  {renderOption ? renderOption(option) : optionLabel}
-                </button>
-              )
-            })}
-            {filtered.length === 0 && <div className="searchable-select-empty">{noResultsText}</div>}
-          </div>
+        <div className="searchable-select-dropdown">
+          <button
+            type="button"
+            className="searchable-select-option"
+            onClick={() => {
+              onChange('')
+              setOpen(false)
+              setQuery('')
+            }}
+          >
+            {allLabel}
+          </button>
+          {filtered.map((o) => (
+            <button
+              type="button"
+              key={o.value}
+              className="searchable-select-option"
+              onClick={() => {
+                onChange(o.value)
+                setOpen(false)
+                setQuery('')
+              }}
+            >
+              {o.label}
+            </button>
+          ))}
+          {filtered.length === 0 && <div className="searchable-select-empty">Tidak ditemukan</div>}
         </div>
       )}
     </div>

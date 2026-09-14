@@ -2,9 +2,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { createClient } from '@/lib/supabaseClient'
 
-// selected: array of requestor names for this project
-// savedRequestors: [{ id, name }] - global reusable list from DB
-export default function RequestorSelect({ selected, onChange, savedRequestors, onRequestorsChanged }) {
+// selected: array of division names for this project
+// savedDivisions: [{ id, name }] - global reusable list from DB
+export default function DivisionSelect({ selected, onChange, savedDivisions, onDivisionsChanged }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const wrapperRef = useRef(null)
@@ -29,33 +29,25 @@ export default function RequestorSelect({ selected, onChange, savedRequestors, o
     }
   }
 
-  async function addNewRequestor() {
+  async function addNewDivision() {
     const name = query.trim()
     if (!name) return
-    const { error } = await supabase.from('requestors').insert({ name })
+    const { error } = await supabase.from('divisions').insert({ name })
     if (!error) {
-      await onRequestorsChanged?.()
+      await onDivisionsChanged?.()
       toggleOption(name)
       setQuery('')
     }
   }
 
-  async function deleteRequestor(name, e) {
-    e.stopPropagation()
-    if (!confirm(`Hapus "${name}" dari daftar requestor tersimpan?`)) return
-    await supabase.from('requestors').delete().eq('name', name)
-    onChange(selected.filter((s) => s !== name))
-    await onRequestorsChanged?.()
-  }
-
-  const filtered = savedRequestors.filter((r) => r.name.toLowerCase().includes(query.toLowerCase()))
-  const exactMatch = savedRequestors.some((r) => r.name.toLowerCase() === query.trim().toLowerCase())
+  const filtered = savedDivisions.filter((d) => d.name.toLowerCase().includes(query.toLowerCase()))
+  const exactMatch = savedDivisions.some((d) => d.name.toLowerCase() === query.trim().toLowerCase())
 
   return (
     <div className="multiselect" ref={wrapperRef}>
       <button type="button" className="multiselect-trigger" onClick={() => setOpen((v) => !v)}>
         {selected.length === 0 ? (
-          <span className="multiselect-placeholder">Pilih atau tambah requestor...</span>
+          <span className="multiselect-placeholder">Pilih atau tambah divisi...</span>
         ) : (
           <span className="multiselect-tags">
             {selected.map((s) => (
@@ -70,31 +62,21 @@ export default function RequestorSelect({ selected, onChange, savedRequestors, o
           <input
             autoFocus
             className="requestor-search-input"
-            placeholder="Cari atau ketik nama baru..."
+            placeholder="Cari atau ketik divisi baru..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          {filtered.map((r) => (
-            <div key={r.id} className="multiselect-option requestor-option">
-              <label>
-                <input type="checkbox" checked={selected.includes(r.name)} onChange={() => toggleOption(r.name)} />
-                {r.name}
-              </label>
-              <button
-                type="button"
-                className="requestor-delete-btn"
-                onClick={(e) => deleteRequestor(r.name, e)}
-                title="Hapus dari daftar tersimpan"
-              >
-                &#128465;
-              </button>
-            </div>
+          {filtered.map((d) => (
+            <label key={d.id} className="multiselect-option">
+              <input type="checkbox" checked={selected.includes(d.name)} onChange={() => toggleOption(d.name)} />
+              {d.name}
+            </label>
           ))}
           {filtered.length === 0 && !query && (
-            <div className="tag-picker-empty">Belum ada requestor tersimpan.</div>
+            <div className="tag-picker-empty">Belum ada divisi tersimpan.</div>
           )}
           {query.trim() && !exactMatch && (
-            <button type="button" className="requestor-add-btn" onClick={addNewRequestor}>
+            <button type="button" className="requestor-add-btn" onClick={addNewDivision}>
               + Tambah &quot;{query.trim()}&quot;
             </button>
           )}

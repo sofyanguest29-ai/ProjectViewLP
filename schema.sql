@@ -1,22 +1,37 @@
--- Project Monitor v3 schema / migration
+-- ============================================================
+-- SCHEMA - Project Monitor v3
+-- Jalankan ini di Supabase SQL Editor.
+-- Aman dijalankan berkali-kali, baik untuk install baru maupun
+-- upgrade dari versi sebelumnya (v1/v2).
+-- ============================================================
+
+create table if not exists public.requestors (
+  id uuid primary key default gen_random_uuid(),
+  name text unique not null,
+  created_at timestamptz default now()
+);
+
+create table if not exists public.divisions (
+  id uuid primary key default gen_random_uuid(),
+  name text unique not null,
+  created_at timestamptz default now()
+);
+
 create table if not exists public.projects (
   id uuid primary key default gen_random_uuid(),
   project_code text unique not null,
   title text not null,
   objective text,
   expected_result text,
-  requestor text not null,
   divisions text[] not null default '{}',
   impacts jsonb not null default '{}'::jsonb,
   requirements text,
-  impact_measurement jsonb not null default '{}'::jsonb,
-  status text not null default 'backlog' check (status in ('completed', 'in_progress', 'hold', 'cancel', 'backlog')),
+  status text not null default 'backlog'
+    check (status in ('completed', 'in_progress', 'hold', 'cancel', 'backlog')),
   created_by uuid references auth.users(id) default auth.uid(),
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
-
-alter table public.projects add column if not exists impact_measurement jsonb not null default '{}'::jsonb;
 
 create table if not exists public.development_logs (
   id uuid primary key default gen_random_uuid(),
@@ -24,60 +39,111 @@ create table if not exists public.development_logs (
   log_date date not null,
   title text not null,
   status text not null check (status in ('Identify', 'Prioritize', 'Improve', 'Impact', 'Maintain')),
-  status_count integer not null default 1,
   detail text,
   created_by uuid references auth.users(id) default auth.uid(),
   created_at timestamptz default now()
 );
-alter table public.development_logs add column if not exists status_count integer not null default 1;
 
-create table if not exists public.requestors (
-  id uuid primary key default gen_random_uuid(),
-  name text unique not null,
-  created_by uuid references auth.users(id) default auth.uid(),
-  created_at timestamptz default now()
-);
+-- ============================================================
+-- Tambahkan kolom baru kalau tabel di atas sudah ada dari versi
+-- sebelumnya (create table if not exists TIDAK menambah kolom
+-- ke tabel yang sudah ada, jadi harus eksplisit lewat ALTER TABLE).
+-- ============================================================
+alter table public.projects add column if not exists requestors text[] not null default '{}';
+alter table public.projects add column if not exists q1_score int;
+alter table public.projects add column if not exists q2_score int;
+alter table public.projects add column if not exists q3_score int;
+alter table public.projects add column if not exists q4_score int;
+alter table public.projects add column if not exists project_type text;
+alter table public.development_logs add column if not exists detail text;
 
 alter table public.projects enable row level security;
 alter table public.development_logs enable row level security;
 alter table public.requestors enable row level security;
+alter table public.divisions enable row level security;
 
+-- Semua user yang login (termasuk guest/anonymous) boleh LIHAT semua data
 drop policy if exists "view all projects" on public.projects;
-create policy "view all projects" on public.projects for select using (auth.role() = 'authenticated');
-drop policy if exists "insert projects non guest" on public.projects;
-create policy "insert projects non guest" on public.projects for insert with check (coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false);
-drop policy if exists "update projects non guest" on public.projects;
-create policy "update projects non guest" on public.projects for update using (coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false);
-drop policy if exists "delete projects non guest" on public.projects;
-create policy "delete projects non guest" on public.projects for delete using (coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false);
+create policy "view all projects" on public.projects
+  for select using (auth.role() = 'authenticated');
 
 drop policy if exists "view all logs" on public.development_logs;
-create policy "view all logs" on public.development_logs for select using (auth.role() = 'authenticated');
-drop policy if exists "insert logs non guest" on public.development_logs;
-create policy "insert logs non guest" on public.development_logs for insert with check (coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false);
-drop policy if exists "update logs non guest" on public.development_logs;
-create policy "update logs non guest" on public.development_logs for update using (coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false);
-drop policy if exists "delete logs non guest" on public.development_logs;
-create policy "delete logs non guest" on public.development_logs for delete using (coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false);
+create policy "view all logs" on public.development_logs
+  for select using (auth.role() = 'authenticated');
 
 drop policy if exists "view all requestors" on public.requestors;
-create policy "view all requestors" on public.requestors for select using (auth.role() = 'authenticated');
+create policy "view all requestors" on public.requestors
+  for select using (auth.role() = 'authenticated');
+
+drop policy if exists "view all divisions" on public.divisions;
+create policy "view all divisions" on public.divisions
+  for select using (auth.role() = 'authenticated');
+
+-- Hanya user BUKAN guest yang boleh insert/update/delete
+drop policy if exists "insert projects non guest" on public.projects;
+create policy "insert projects non guest" on public.projects
+  for insert with check (coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false);
+
+drop policy if exists "update projects non guest" on public.projects;
+create policy "update projects non guest" on public.projects
+  for update using (coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false);
+
+drop policy if exists "delete projects non guest" on public.projects;
+create policy "delete projects non guest" on public.projects
+  for delete using (coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false);
+
+drop policy if exists "insert logs non guest" on public.development_logs;
+create policy "insert logs non guest" on public.development_logs
+  for insert with check (coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false);
+
+drop policy if exists "update logs non guest" on public.development_logs;
+create policy "update logs non guest" on public.development_logs
+  for update using (coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false);
+
+drop policy if exists "delete logs non guest" on public.development_logs;
+create policy "delete logs non guest" on public.development_logs
+  for delete using (coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false);
+
 drop policy if exists "insert requestors non guest" on public.requestors;
-create policy "insert requestors non guest" on public.requestors for insert with check (coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false);
+create policy "insert requestors non guest" on public.requestors
+  for insert with check (coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false);
+
 drop policy if exists "delete requestors non guest" on public.requestors;
-create policy "delete requestors non guest" on public.requestors for delete using (coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false);
+create policy "delete requestors non guest" on public.requestors
+  for delete using (coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false);
 
-drop policy if exists "update requestors non guest" on public.requestors;
-create policy "update requestors non guest" on public.requestors for update using (coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false);
+-- Divisi bisa DITAMBAH oleh user bukan-guest, tapi TIDAK BISA dihapus (sengaja
+-- tidak ada delete policy untuk tabel ini).
+drop policy if exists "insert divisions non guest" on public.divisions;
+create policy "insert divisions non guest" on public.divisions
+  for insert with check (coalesce((auth.jwt() ->> 'is_anonymous')::boolean, false) = false);
 
--- Recalculate status_count for existing logs by project + status + chronological order.
-with ranked as (
-  select id, row_number() over (partition by project_id, status order by log_date asc, created_at asc, id asc) as rn
-  from public.development_logs
-)
-update public.development_logs d set status_count = ranked.rn from ranked where d.id = ranked.id;
+-- Isi 6 divisi default (aman dijalankan berkali-kali)
+insert into public.divisions (name) values
+  ('Operation Excellence'),
+  ('Linehaul'),
+  ('FLM'),
+  ('Airfreight & RA'),
+  ('Sortation'),
+  ('Operation & Cost Quality')
+on conflict (name) do nothing;
 
--- Seed requestor dropdown from existing projects.
+-- ============================================================
+-- MIGRASI dari v2 (kolom "requestor" single text -> "requestors" array)
+-- Aman dijalankan walau kolom lama sudah tidak ada / install baru.
+-- ============================================================
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'projects' and column_name = 'requestor'
+  ) then
+    execute 'update public.projects set requestors = array[requestor] where requestor is not null and (requestors is null or requestors = ''{}'')';
+    execute 'alter table public.projects drop column requestor';
+  end if;
+end $$;
+
+-- Isi tabel requestors dari nama-nama yang sudah pernah dipakai di project (kalau ada)
 insert into public.requestors (name)
-select distinct trim(requestor) from public.projects where nullif(trim(requestor), '') is not null
+select distinct unnest(requestors) from public.projects
 on conflict (name) do nothing;
