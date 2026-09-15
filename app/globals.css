@@ -1418,20 +1418,23 @@ body {
   flex-wrap: nowrap;
   flex-shrink: 0;
   padding-right: 14px;
+  justify-content: flex-end;
 }
 .devlog-filter-inline {
-  width: 115px;
-  min-width: 115px;
+  width: 140px;
+  min-width: 140px;
   flex-shrink: 0;
 }
 .devlog-filter-date {
-  padding: 8px 6px;
+  padding: 8px 6px !important;
   border: 1px solid #d1d5db;
   border-radius: 6px;
   font-size: 12px;
-  width: 115px;
+  width: 140px !important;
+  min-width: 0 !important;
+  max-width: 140px !important;
   height: 35px;
-  box-sizing: border-box;
+  box-sizing: border-box !important;
   flex-shrink: 0;
 }
 .devlog-add-icon-btn {
