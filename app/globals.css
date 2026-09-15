@@ -1513,3 +1513,25 @@ body {
   height: 35px;
   box-sizing: border-box;
 }
+
+/* ============ Export Excel button ============ */
+.dashboard-top-buttons {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.export-excel-btn {
+  background: #15803d;
+  color: white;
+  border: none;
+  padding: 9px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  height: 38px;
+}
+.export-excel-btn:hover {
+  background: #166534;
+}
