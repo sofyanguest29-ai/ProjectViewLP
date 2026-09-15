@@ -1,52 +1,134 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
+import Navbar from '@/components/Navbar'
+import FilterBar from '@/components/FilterBar'
+import ProjectSearchInput from '@/components/ProjectSearchInput'
+import { PROJECT_STATUS } from '@/lib/constants'
 import { createClient } from '@/lib/supabaseClient'
-import PasswordField from '@/components/PasswordField'
+import { useCurrentUser } from '@/lib/useCurrentUser'
 
-export default function UpdatePasswordPage() {
-  const [password, setPassword] = useState('')
-  const [confirm, setConfirm] = useState('')
-  const [error, setError] = useState('')
-  const [message, setMessage] = useState('')
-  const [loading, setLoading] = useState(false)
+export default function KanbanPage() {
+  const [projects, setProjects] = useState([])
+  const [savedRequestors, setSavedRequestors] = useState([])
+  const [savedDivisions, setSavedDivisions] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [filters, setFilters] = useState({ division: '', requestor: '', status: '', projectType: '' })
+  const [search, setSearch] = useState('')
   const router = useRouter()
   const supabase = createClient()
+  const { isGuest } = useCurrentUser()
 
-  async function handleUpdate(e) {
-    e.preventDefault()
-    setError('')
-    if (password.length < 8) {
-      setError('Password minimal 8 karakter')
-      return
-    }
-    if (password !== confirm) {
-      setError('New Password dan Confirm New Password harus sama')
-      return
-    }
+  const load = useCallback(async () => {
     setLoading(true)
-    const { error } = await supabase.auth.updateUser({ password })
+    const [{ data: p }, { data: r }, { data: d }] = await Promise.all([
+      supabase.from('projects').select('*').order('created_at', { ascending: false }),
+      supabase.from('requestors').select('*').order('name'),
+      supabase.from('divisions').select('*').order('name'),
+    ])
+    setProjects(p ?? [])
+    setSavedRequestors(r ?? [])
+    setSavedDivisions(d ?? [])
     setLoading(false)
-    if (error) {
-      setError(error.message)
-      return
-    }
-    setMessage('Password berhasil diubah. Mengalihkan ke login...')
-    setTimeout(() => router.push('/login'), 1500)
+  }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  const requestorOptions = useMemo(() => savedRequestors.map((r) => r.name), [savedRequestors])
+  const divisionOptions = useMemo(() => savedDivisions.map((d) => d.name), [savedDivisions])
+
+  const filteredProjects = useMemo(() => {
+    return projects.filter((p) => {
+      if (filters.division && !(p.divisions ?? []).includes(filters.division)) return false
+      if (filters.requestor && !(p.requestors ?? []).includes(filters.requestor)) return false
+      if (filters.status && p.status !== filters.status) return false
+      if (filters.projectType && p.project_type !== filters.projectType) return false
+      if (search) {
+        const q = search.toLowerCase()
+        if (!p.project_code.includes(q) && !p.title.toLowerCase().includes(q)) return false
+      }
+      return true
+    })
+  }, [projects, filters, search])
+
+  async function handleDragEnd(result) {
+    if (isGuest) return
+    const { source, destination, draggableId } = result
+    if (!destination) return
+    if (source.droppableId === destination.droppableId) return
+
+    const newStatus = destination.droppableId
+    setProjects((prev) => prev.map((p) => (p.id === draggableId ? { ...p, status: newStatus } : p)))
+    await supabase.from('projects').update({ status: newStatus }).eq('id', draggableId)
   }
 
   return (
-    <div className="auth-container">
-      <form onSubmit={handleUpdate} className="auth-form">
-        <h1>Set Password Baru</h1>
-        {error && <div className="error-box">{error}</div>}
-        {message && <div className="success-box">{message}</div>}
-        <PasswordField label="New Password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} />
-        <PasswordField label="Confirm New Password" value={confirm} onChange={(e) => setConfirm(e.target.value)} minLength={8} />
-        <button type="submit" disabled={loading} className="primary-btn">
-          {loading ? 'Menyimpan...' : 'Simpan Password'}
-        </button>
-      </form>
-    </div>
+    <>
+      <Navbar />
+      <main className="container container-wide">
+        <div className="kanban-header">
+          <h1>Kanban {isGuest && <span className="guest-badge">View Only</span>}</h1>
+          <button type="button" className="back-link" onClick={() => router.push('/dashboard')}>&larr; Kembali ke List</button>
+        </div>
+
+        <div className="dashboard-top-row">
+          <ProjectSearchInput projects={projects} value={search} onChange={setSearch} />
+        </div>
+
+        <div className="dashboard-top">
+          <FilterBar filters={filters} onChange={setFilters} requestorOptions={requestorOptions} divisionOptions={divisionOptions} onClearExtra={() => setSearch('')} />
+        </div>
+
+        {loading ? (
+          <p>Memuat...</p>
+        ) : (
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <div className="kanban-board">
+              {PROJECT_STATUS.map((col) => (
+                <Droppable droppableId={col.value} key={col.value}>
+                  {(provided, snapshot) => (
+                    <div
+                      className={`kanban-column ${snapshot.isDraggingOver ? 'kanban-column-over' : ''}`}
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                    >
+                      <div className="kanban-column-header" style={{ borderColor: col.color }}>
+                        {col.label}
+                        <span className="kanban-count">{filteredProjects.filter((p) => p.status === col.value).length}</span>
+                      </div>
+                      <div className="kanban-column-body">
+                        {filteredProjects
+                          .filter((p) => p.status === col.value)
+                          .map((p, index) => (
+                            <Draggable draggableId={p.id} index={index} key={p.id} isDragDisabled={isGuest}>
+                              {(dragProvided, dragSnapshot) => (
+                                <div
+                                  ref={dragProvided.innerRef}
+                                  {...dragProvided.draggableProps}
+                                  {...dragProvided.dragHandleProps}
+                                  className={`kanban-card ${dragSnapshot.isDragging ? 'kanban-card-dragging' : ''}`}
+                                  onClick={() => router.push(`/dashboard/project/${p.id}`)}
+                                >
+                                  <div className="kanban-card-code">#{p.project_code}</div>
+                                  <div className="kanban-card-title">{p.title}</div>
+                                  <div className="kanban-card-meta">{(p.requestors ?? []).join(', ')}</div>
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                        {provided.placeholder}
+                      </div>
+                    </div>
+                  )}
+                </Droppable>
+              ))}
+            </div>
+          </DragDropContext>
+        )}
+      </main>
+    </>
   )
 }
