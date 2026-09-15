@@ -13,6 +13,7 @@ import ProjectSearchInput from '@/components/ProjectSearchInput'
 import { createClient } from '@/lib/supabaseClient'
 import { useCurrentUser } from '@/lib/useCurrentUser'
 import { computeStartDate, computeFinishDate } from '@/lib/projectDates'
+import { exportProjectsToExcel } from '@/lib/exportExcel'
 
 export default function DashboardPage() {
   const [projects, setProjects] = useState([])
@@ -121,6 +122,10 @@ export default function DashboardPage() {
     setEditingLogs([])
   }
 
+  function handleExport() {
+    exportProjectsToExcel(filteredProjects, logsByProject)
+  }
+
   return (
     <>
       <Navbar />
@@ -150,11 +155,16 @@ export default function DashboardPage() {
             pageSize={pageSize}
             onPageSizeChange={setPageSize}
           />
-          {!isGuest && (
-            <button type="button" className="add-project-link" onClick={openAdd}>
-              + Add New Project
+          <div className="dashboard-top-buttons">
+            {!isGuest && (
+              <button type="button" className="add-project-link" onClick={openAdd}>
+                + Add New Project
+              </button>
+            )}
+            <button type="button" className="export-excel-btn" onClick={handleExport}>
+              Export Excel
             </button>
-          )}
+          </div>
         </div>
 
         {loading ? (
