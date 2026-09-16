@@ -161,9 +161,11 @@ export default function DashboardPage() {
                 + Add New Project
               </button>
             )}
-            <button type="button" className="export-excel-btn" onClick={handleExport}>
-              Export Excel
-            </button>
+            {!isGuest && (
+              <button type="button" className="export-excel-btn" onClick={handleExport}>
+                Export Excel
+              </button>
+            )}
           </div>
         </div>
 
