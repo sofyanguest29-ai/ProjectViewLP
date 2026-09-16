@@ -17,7 +17,7 @@ export default function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-brand">
-        Project Monitor
+        PortofoliOps
         {isGuest && <span className="guest-badge">Guest &middot; View Only</span>}
       </div>
       <div className="navbar-links">
