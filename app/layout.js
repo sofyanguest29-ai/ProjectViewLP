@@ -1,7 +1,7 @@
 import './globals.css'
 
 export const metadata = {
-  title: 'Project Monitor',
+  title: 'PortofoliOps',
   description: 'Internal project monitoring tool',
 }
 
