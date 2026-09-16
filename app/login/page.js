@@ -44,7 +44,7 @@ export default function LoginPage() {
   return (
     <div className="auth-container">
       <form onSubmit={handleLogin} className="auth-form">
-        <h1>Project Monitor</h1>
+        <h1>PortofoliOps</h1>
         <p className="subtitle">Login untuk masuk</p>
         {error && <div className="error-box">{error}</div>}
         <label>Email</label>
