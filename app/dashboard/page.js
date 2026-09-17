@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useMemo, useCallback } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { format, parseISO } from 'date-fns'
@@ -14,6 +14,39 @@ import { createClient } from '@/lib/supabaseClient'
 import { useCurrentUser } from '@/lib/useCurrentUser'
 import { computeStartDate, computeFinishDate } from '@/lib/projectDates'
 import { exportProjectsToExcel } from '@/lib/exportExcel'
+import { impactBand } from '@/lib/constants'
+
+const SORT_OPTIONS = [
+  { value: 'no', label: 'No' },
+  { value: 'project_code', label: 'ID Project' },
+  { value: 'title', label: 'Nama Project' },
+  { value: 'project_type', label: 'Project Type' },
+  { value: 'requestors', label: 'Nama Requestor' },
+  { value: 'divisions', label: 'Divisi' },
+  { value: 'status', label: 'Status Project' },
+  { value: 'start_date', label: 'Start Date' },
+  { value: 'finish_date', label: 'Finish Date' },
+  { value: 'priority', label: 'Priority Scoring' },
+]
+
+function getPriority(project) {
+  const values = [project.q1_score, project.q2_score, project.q3_score, project.q4_score]
+  if (values.some((v) => v === null || v === undefined || v === '')) return null
+  const total = values.reduce((sum, v) => sum + Number(v), 0)
+  return { total, ...impactBand(total) }
+}
+
+function SortIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M8 6h13" />
+      <path d="M8 12h9" />
+      <path d="M8 18h5" />
+      <path d="m3 8 3-3 3 3" />
+      <path d="m3 16 3 3 3-3" />
+    </svg>
+  )
+}
 
 export default function DashboardPage() {
   const [projects, setProjects] = useState([])
@@ -22,13 +55,16 @@ export default function DashboardPage() {
   const [savedDivisions, setSavedDivisions] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [filters, setFilters] = useState({ division: '', requestor: '', status: '', projectType: '' })
+  const [filters, setFilters] = useState({ division: '', requestor: '', status: '', projectType: '', priority: '' })
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
   const [viewMenuOpen, setViewMenuOpen] = useState(false)
+  const [sortMenuOpen, setSortMenuOpen] = useState(false)
+  const [sortConfig, setSortConfig] = useState({ key: 'no', direction: 'desc' })
   const [modalMode, setModalMode] = useState(null)
   const [editingProject, setEditingProject] = useState(null)
   const [editingLogs, setEditingLogs] = useState([])
+  const sortRef = useRef(null)
   const router = useRouter()
   const supabase = createClient()
   const { isGuest } = useCurrentUser()
@@ -52,6 +88,14 @@ export default function DashboardPage() {
     loadProjects()
   }, [loadProjects])
 
+  useEffect(() => {
+    function handleOutsideClick(event) {
+      if (sortRef.current && !sortRef.current.contains(event.target)) setSortMenuOpen(false)
+    }
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [])
+
   const requestorOptions = useMemo(() => savedRequestors.map((r) => r.name), [savedRequestors])
   const divisionOptions = useMemo(() => savedDivisions.map((d) => d.name), [savedDivisions])
 
@@ -70,23 +114,59 @@ export default function DashboardPage() {
       if (filters.requestor && !(p.requestors ?? []).includes(filters.requestor)) return false
       if (filters.status && p.status !== filters.status) return false
       if (filters.projectType && p.project_type !== filters.projectType) return false
+      if (filters.priority && getPriority(p)?.label !== filters.priority) return false
       if (search) {
         const q = search.toLowerCase()
-        if (!p.project_code.includes(q) && !p.title.toLowerCase().includes(q)) return false
+        if (!String(p.project_code ?? '').toLowerCase().includes(q) && !String(p.title ?? '').toLowerCase().includes(q)) return false
       }
       return true
     })
   }, [projects, filters, search])
 
+  const sortedProjects = useMemo(() => {
+    const list = filteredProjects.map((project, index) => ({ project, originalIndex: index }))
+    const getValue = ({ project, originalIndex }) => {
+      const logs = logsByProject[project.id] ?? []
+      const priority = getPriority(project)
+      switch (sortConfig.key) {
+        case 'no': return originalIndex
+        case 'project_code': return String(project.project_code ?? '')
+        case 'title': return String(project.title ?? '')
+        case 'project_type': return String(project.project_type ?? '')
+        case 'requestors': return (project.requestors ?? []).join(', ')
+        case 'divisions': return (project.divisions ?? []).join(', ')
+        case 'status': return String(project.status ?? '')
+        case 'start_date': return computeStartDate(logs) ?? ''
+        case 'finish_date': return computeFinishDate(logs) ?? ''
+        case 'priority': return priority?.total ?? -1
+        default: return ''
+      }
+    }
+
+    return list.sort((a, b) => {
+      const aValue = getValue(a)
+      const bValue = getValue(b)
+      const aEmpty = aValue === '' || aValue === null || aValue === undefined
+      const bEmpty = bValue === '' || bValue === null || bValue === undefined
+      if (aEmpty && !bEmpty) return 1
+      if (!aEmpty && bEmpty) return -1
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue
+      }
+      const result = String(aValue).localeCompare(String(bValue), 'id', { numeric: true, sensitivity: 'base' })
+      return sortConfig.direction === 'asc' ? result : -result
+    }).map(({ project }) => project)
+  }, [filteredProjects, logsByProject, sortConfig])
+
   useEffect(() => {
     setCurrentPage(1)
-  }, [filters, search, pageSize])
+  }, [filters, search, pageSize, sortConfig])
 
-  const totalPages = Math.max(1, Math.ceil(filteredProjects.length / pageSize))
+  const totalPages = Math.max(1, Math.ceil(sortedProjects.length / pageSize))
   const paginatedProjects = useMemo(() => {
     const start = (currentPage - 1) * pageSize
-    return filteredProjects.slice(start, start + pageSize)
-  }, [filteredProjects, currentPage, pageSize])
+    return sortedProjects.slice(start, start + pageSize)
+  }, [sortedProjects, currentPage, pageSize])
 
   async function handleDelete(project) {
     if (!confirm(`Hapus project "${project.title}"?`)) return
@@ -124,6 +204,14 @@ export default function DashboardPage() {
 
   function handleExport() {
     exportProjectsToExcel(filteredProjects, logsByProject)
+  }
+
+  function selectSort(key) {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key ? (prev.direction === 'asc' ? 'desc' : 'asc') : 'desc',
+    }))
+    setSortMenuOpen(false)
   }
 
   return (
@@ -184,7 +272,48 @@ export default function DashboardPage() {
                   <th>Divisi</th>
                   <th>Status Project</th>
                   <th>Start Date</th>
-                  <th>Finish Date</th>
+                  <th className="finish-date-header">
+                    <span>Finish Date</span>
+                    <div className="sort-control" ref={sortRef}>
+                      <button
+                        type="button"
+                        className={`sort-icon-btn ${sortMenuOpen ? 'active' : ''}`}
+                        onClick={() => setSortMenuOpen((v) => !v)}
+                        title="Sort project"
+                        aria-label="Sort project"
+                      >
+                        <SortIcon />
+                      </button>
+                      {sortMenuOpen && (
+                        <div className="sort-dropdown">
+                          <div className="sort-dropdown-section">
+                            <div className="sort-dropdown-label">Sort by:</div>
+                            {SORT_OPTIONS.map((option) => (
+                              <button
+                                type="button"
+                                key={option.value}
+                                className={`sort-option ${sortConfig.key === option.value ? 'selected' : ''}`}
+                                onClick={() => selectSort(option.value)}
+                              >
+                                <span>{option.label}</span>
+                                {sortConfig.key === option.value && <span className="sort-option-arrow">›</span>}
+                              </button>
+                            ))}
+                          </div>
+                          <div className="sort-dropdown-divider" />
+                          <div className="sort-dropdown-section">
+                            <div className="sort-dropdown-label">Sort order:</div>
+                            <button type="button" className={`sort-option ${sortConfig.direction === 'desc' ? 'selected' : ''}`} onClick={() => setSortConfig((prev) => ({ ...prev, direction: 'desc' }))}>
+                              Descending
+                            </button>
+                            <button type="button" className={`sort-option ${sortConfig.direction === 'asc' ? 'selected' : ''}`} onClick={() => setSortConfig((prev) => ({ ...prev, direction: 'asc' }))}>
+                              Ascending
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </th>
                   <th></th>
                 </tr>
               </thead>
@@ -193,6 +322,7 @@ export default function DashboardPage() {
                   const projLogs = logsByProject[p.id] ?? []
                   const startDate = computeStartDate(projLogs)
                   const finishDate = computeFinishDate(projLogs)
+                  const priority = getPriority(p)
                   return (
                     <tr key={p.id} onDoubleClick={() => router.push(`/dashboard/project/${p.id}`)}>
                       <td>{(currentPage - 1) * pageSize + index + 1}</td>
@@ -204,6 +334,13 @@ export default function DashboardPage() {
                       <td><StatusBadge status={p.status} /></td>
                       <td>{startDate ? format(parseISO(startDate), 'd MMM yyyy') : '-'}</td>
                       <td>{finishDate ? format(parseISO(finishDate), 'd MMM yyyy') : '-'}</td>
+                      <td>
+                        {priority ? (
+                          <span className="priority-table-value" style={{ color: priority.color, background: priority.bg }}>
+                            {priority.label} ({priority.total})
+                          </span>
+                        ) : '-'}
+                      </td>
                       <td>
                         <RowMenu
                           isGuest={isGuest}
@@ -217,7 +354,7 @@ export default function DashboardPage() {
                 })}
                 {paginatedProjects.length === 0 && (
                   <tr>
-                    <td colSpan={10} className="empty-state">Tidak ada project.</td>
+                    <td colSpan={11} className="empty-state">Tidak ada project.</td>
                   </tr>
                 )}
               </tbody>
@@ -233,7 +370,7 @@ export default function DashboardPage() {
                 &larr; Prev
               </button>
               <span className="pagination-info">
-                Halaman {currentPage} dari {totalPages} ({filteredProjects.length} project)
+                Halaman {currentPage} dari {totalPages} ({sortedProjects.length} project)
               </span>
               <button
                 type="button"
