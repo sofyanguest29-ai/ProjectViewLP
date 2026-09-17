@@ -1535,3 +1535,130 @@ body {
 .export-excel-btn:hover {
   background: #166534;
 }
+
+/* ============ Priority scoring + table sort ============ */
+.project-table th.finish-date-header {
+  position: relative;
+  white-space: nowrap;
+}
+.finish-date-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.sort-control {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.sort-icon-btn {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #6b7280;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.sort-icon-btn:hover,
+.sort-icon-btn.active {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  color: #4f46e5;
+}
+.sort-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 210px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+  z-index: 80;
+  overflow: hidden;
+  padding: 5px;
+}
+.sort-dropdown-section {
+  padding: 3px 0;
+}
+.sort-dropdown-label {
+  padding: 6px 9px 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+.sort-option {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 9px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #374151;
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+}
+.sort-option:hover,
+.sort-option.selected {
+  background: #f3f4f6;
+}
+.sort-option.selected {
+  color: #111827;
+  font-weight: 600;
+}
+.sort-option-arrow {
+  color: #4f46e5;
+  font-size: 17px;
+  line-height: 1;
+}
+.sort-dropdown-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 4px 0;
+}
+.priority-table-value {
+  display: inline-block;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ============ Kanban priority flag ============ */
+.kanban-card {
+  position: relative;
+  padding-right: 72px;
+}
+.kanban-priority-flag {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  line-height: 1.2;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .sort-dropdown {
+    right: -4px;
+    width: 200px;
+  }
+  .priority-table-value {
+    font-size: 11px;
+  }
+}
