@@ -5,16 +5,23 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd'
 import Navbar from '@/components/Navbar'
 import FilterBar from '@/components/FilterBar'
 import ProjectSearchInput from '@/components/ProjectSearchInput'
-import { PROJECT_STATUS } from '@/lib/constants'
+import { PROJECT_STATUS, impactBand } from '@/lib/constants'
 import { createClient } from '@/lib/supabaseClient'
 import { useCurrentUser } from '@/lib/useCurrentUser'
+
+function getPriority(project) {
+  const values = [project.q1_score, project.q2_score, project.q3_score, project.q4_score]
+  if (values.some((v) => v === null || v === undefined || v === '')) return null
+  const total = values.reduce((sum, v) => sum + Number(v), 0)
+  return { total, ...impactBand(total) }
+}
 
 export default function KanbanPage() {
   const [projects, setProjects] = useState([])
   const [savedRequestors, setSavedRequestors] = useState([])
   const [savedDivisions, setSavedDivisions] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState({ division: '', requestor: '', status: '', projectType: '' })
+  const [filters, setFilters] = useState({ division: '', requestor: '', status: '', projectType: '', priority: '' })
   const [search, setSearch] = useState('')
   const router = useRouter()
   const supabase = createClient()
@@ -46,9 +53,10 @@ export default function KanbanPage() {
       if (filters.requestor && !(p.requestors ?? []).includes(filters.requestor)) return false
       if (filters.status && p.status !== filters.status) return false
       if (filters.projectType && p.project_type !== filters.projectType) return false
+      if (filters.priority && getPriority(p)?.label !== filters.priority) return false
       if (search) {
         const q = search.toLowerCase()
-        if (!p.project_code.includes(q) && !p.title.toLowerCase().includes(q)) return false
+        if (!String(p.project_code ?? '').toLowerCase().includes(q) && !String(p.title ?? '').toLowerCase().includes(q)) return false
       }
       return true
     })
@@ -102,23 +110,31 @@ export default function KanbanPage() {
                       <div className="kanban-column-body">
                         {filteredProjects
                           .filter((p) => p.status === col.value)
-                          .map((p, index) => (
-                            <Draggable draggableId={p.id} index={index} key={p.id} isDragDisabled={isGuest}>
-                              {(dragProvided, dragSnapshot) => (
-                                <div
-                                  ref={dragProvided.innerRef}
-                                  {...dragProvided.draggableProps}
-                                  {...dragProvided.dragHandleProps}
-                                  className={`kanban-card ${dragSnapshot.isDragging ? 'kanban-card-dragging' : ''}`}
-                                  onClick={() => router.push(`/dashboard/project/${p.id}`)}
-                                >
-                                  <div className="kanban-card-code">#{p.project_code}</div>
-                                  <div className="kanban-card-title">{p.title}</div>
-                                  <div className="kanban-card-meta">{(p.requestors ?? []).join(', ')}</div>
-                                </div>
-                              )}
-                            </Draggable>
-                          ))}
+                          .map((p, index) => {
+                            const priority = getPriority(p)
+                            return (
+                              <Draggable draggableId={p.id} index={index} key={p.id} isDragDisabled={isGuest}>
+                                {(dragProvided, dragSnapshot) => (
+                                  <div
+                                    ref={dragProvided.innerRef}
+                                    {...dragProvided.draggableProps}
+                                    {...dragProvided.dragHandleProps}
+                                    className={`kanban-card ${dragSnapshot.isDragging ? 'kanban-card-dragging' : ''}`}
+                                    onClick={() => router.push(`/dashboard/project/${p.id}`)}
+                                  >
+                                    {priority && (
+                                      <span className="kanban-priority-flag" style={{ color: priority.color, background: priority.bg }}>
+                                        {priority.label}
+                                      </span>
+                                    )}
+                                    <div className="kanban-card-code">#{p.project_code}</div>
+                                    <div className="kanban-card-title">{p.title}</div>
+                                    <div className="kanban-card-meta">{(p.requestors ?? []).join(', ')}</div>
+                                  </div>
+                                )}
+                              </Draggable>
+                            )
+                          })}
                         {provided.placeholder}
                       </div>
                     </div>
