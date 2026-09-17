@@ -21,7 +21,7 @@ export default function KanbanPage() {
   const [savedRequestors, setSavedRequestors] = useState([])
   const [savedDivisions, setSavedDivisions] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState({ division: '', requestor: '', status: '', projectType: '', priority: '' })
+  const [filters, setFilters] = useState({ division: '', requestor: '', status: '', projectType: '', priority: [] })
   const [search, setSearch] = useState('')
   const router = useRouter()
   const supabase = createClient()
@@ -53,7 +53,7 @@ export default function KanbanPage() {
       if (filters.requestor && !(p.requestors ?? []).includes(filters.requestor)) return false
       if (filters.status && p.status !== filters.status) return false
       if (filters.projectType && p.project_type !== filters.projectType) return false
-      if (filters.priority && getPriority(p)?.label !== filters.priority) return false
+      if (filters.priority && filters.priority.length > 0 && !filters.priority.includes(getPriority(p)?.label)) return false
       if (search) {
         const q = search.toLowerCase()
         if (!String(p.project_code ?? '').toLowerCase().includes(q) && !String(p.title ?? '').toLowerCase().includes(q)) return false
@@ -87,7 +87,7 @@ export default function KanbanPage() {
         </div>
 
         <div className="dashboard-top">
-          <FilterBar filters={filters} onChange={setFilters} requestorOptions={requestorOptions} divisionOptions={divisionOptions} onClearExtra={() => setSearch('')} />
+          <FilterBar filters={filters} onChange={setFilters} requestorOptions={requestorOptions} divisionOptions={divisionOptions} onClearExtra={() => setSearch('')} priorityMulti />
         </div>
 
         {loading ? (
