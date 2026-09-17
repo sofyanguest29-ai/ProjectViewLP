@@ -1,13 +1,10 @@
 'use client'
 import { PROJECT_STATUS, PROJECT_TYPES, PAGE_SIZE_OPTIONS } from '@/lib/constants'
 import SearchableSelect from './SearchableSelect'
+import MultiSelect from './MultiSelect'
 
-const EMPTY_FILTERS = { division: '', requestor: '', status: '', projectType: '', priority: '' }
-const PRIORITY_OPTIONS = [
-  { value: 'High', label: 'High' },
-  { value: 'Medium', label: 'Medium' },
-  { value: 'Low', label: 'Low' },
-]
+const PRIORITY_LABELS = ['High', 'Medium', 'Low']
+const PRIORITY_OPTIONS = PRIORITY_LABELS.map((v) => ({ value: v, label: v }))
 
 function FilterIcon() {
   return (
@@ -25,7 +22,10 @@ export default function FilterBar({
   onClearExtra,
   pageSize,
   onPageSizeChange,
+  priorityMulti = false,
 }) {
+  const EMPTY_FILTERS = { division: '', requestor: '', status: '', projectType: '', priority: priorityMulti ? [] : '' }
+
   function update(field, value) {
     onChange({ ...filters, [field]: value })
   }
@@ -84,13 +84,22 @@ export default function FilterBar({
       </div>
       <div className="filter-group">
         <label>Priority Scoring</label>
-        <SearchableSelect
-          options={PRIORITY_OPTIONS}
-          value={filters.priority}
-          onChange={(v) => update('priority', v)}
-          allLabel="Semua Priority"
-          placeholder="Cari priority..."
-        />
+        {priorityMulti ? (
+          <MultiSelect
+            options={PRIORITY_LABELS}
+            selected={filters.priority || []}
+            onChange={(v) => update('priority', v)}
+            placeholder="Semua Priority"
+          />
+        ) : (
+          <SearchableSelect
+            options={PRIORITY_OPTIONS}
+            value={filters.priority}
+            onChange={(v) => update('priority', v)}
+            allLabel="Semua Priority"
+            placeholder="Cari priority..."
+          />
+        )}
       </div>
       {pageSize !== undefined && onPageSizeChange && (
         <div className="filter-group">
