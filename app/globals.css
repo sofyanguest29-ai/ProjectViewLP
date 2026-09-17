@@ -222,6 +222,8 @@ body {
   font-size: 12px;
   text-transform: uppercase;
   color: #6b7280;
+  text-align: center;
+  vertical-align: middle;
 }
 
 .delete-btn {
@@ -1537,18 +1539,23 @@ body {
 }
 
 /* ============ Priority scoring + table sort ============ */
-.project-table th.finish-date-header {
+.project-table th.priority-scoring-header {
   position: relative;
   white-space: nowrap;
 }
-.finish-date-header {
+.priority-scoring-header-content {
+  position: relative;
+  min-height: 28px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 6px;
+  justify-content: center;
+  padding-right: 34px;
 }
 .sort-control {
-  position: relative;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   display: inline-flex;
   flex-shrink: 0;
 }
