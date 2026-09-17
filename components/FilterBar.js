@@ -2,7 +2,12 @@
 import { PROJECT_STATUS, PROJECT_TYPES, PAGE_SIZE_OPTIONS } from '@/lib/constants'
 import SearchableSelect from './SearchableSelect'
 
-const EMPTY_FILTERS = { division: '', requestor: '', status: '', projectType: '' }
+const EMPTY_FILTERS = { division: '', requestor: '', status: '', projectType: '', priority: '' }
+const PRIORITY_OPTIONS = [
+  { value: 'High', label: 'High' },
+  { value: 'Medium', label: 'Medium' },
+  { value: 'Low', label: 'Low' },
+]
 
 function FilterIcon() {
   return (
@@ -75,6 +80,16 @@ export default function FilterBar({
           onChange={(v) => update('projectType', v)}
           allLabel="Semua Project Type"
           placeholder="Cari project type..."
+        />
+      </div>
+      <div className="filter-group">
+        <label>Priority Scoring</label>
+        <SearchableSelect
+          options={PRIORITY_OPTIONS}
+          value={filters.priority}
+          onChange={(v) => update('priority', v)}
+          allLabel="Semua Priority"
+          placeholder="Cari priority..."
         />
       </div>
       {pageSize !== undefined && onPageSizeChange && (
