@@ -272,46 +272,49 @@ export default function DashboardPage() {
                   <th>Divisi</th>
                   <th>Status Project</th>
                   <th>Start Date</th>
-                  <th className="finish-date-header">
-                    <span>Finish Date</span>
-                    <div className="sort-control" ref={sortRef}>
-                      <button
-                        type="button"
-                        className={`sort-icon-btn ${sortMenuOpen ? 'active' : ''}`}
-                        onClick={() => setSortMenuOpen((v) => !v)}
-                        title="Sort project"
-                        aria-label="Sort project"
-                      >
-                        <SortIcon />
-                      </button>
-                      {sortMenuOpen && (
-                        <div className="sort-dropdown">
-                          <div className="sort-dropdown-section">
-                            <div className="sort-dropdown-label">Sort by:</div>
-                            {SORT_OPTIONS.map((option) => (
-                              <button
-                                type="button"
-                                key={option.value}
-                                className={`sort-option ${sortConfig.key === option.value ? 'selected' : ''}`}
-                                onClick={() => selectSort(option.value)}
-                              >
-                                <span>{option.label}</span>
-                                {sortConfig.key === option.value && <span className="sort-option-arrow">›</span>}
+                  <th>Finish Date</th>
+                  <th className="priority-scoring-header">
+                    <div className="priority-scoring-header-content">
+                      <span>Priority Scoring</span>
+                      <div className="sort-control" ref={sortRef}>
+                        <button
+                          type="button"
+                          className={`sort-icon-btn ${sortMenuOpen ? 'active' : ''}`}
+                          onClick={() => setSortMenuOpen((v) => !v)}
+                          title="Sort project"
+                          aria-label="Sort project"
+                        >
+                          <SortIcon />
+                        </button>
+                        {sortMenuOpen && (
+                          <div className="sort-dropdown">
+                            <div className="sort-dropdown-section">
+                              <div className="sort-dropdown-label">Sort by:</div>
+                              {SORT_OPTIONS.map((option) => (
+                                <button
+                                  type="button"
+                                  key={option.value}
+                                  className={`sort-option ${sortConfig.key === option.value ? 'selected' : ''}`}
+                                  onClick={() => selectSort(option.value)}
+                                >
+                                  <span>{option.label}</span>
+                                  {sortConfig.key === option.value && <span className="sort-option-arrow">›</span>}
+                                </button>
+                              ))}
+                            </div>
+                            <div className="sort-dropdown-divider" />
+                            <div className="sort-dropdown-section">
+                              <div className="sort-dropdown-label">Sort order:</div>
+                              <button type="button" className={`sort-option ${sortConfig.direction === 'desc' ? 'selected' : ''}`} onClick={() => setSortConfig((prev) => ({ ...prev, direction: 'desc' }))}>
+                                Descending
                               </button>
-                            ))}
+                              <button type="button" className={`sort-option ${sortConfig.direction === 'asc' ? 'selected' : ''}`} onClick={() => setSortConfig((prev) => ({ ...prev, direction: 'asc' }))}>
+                                Ascending
+                              </button>
+                            </div>
                           </div>
-                          <div className="sort-dropdown-divider" />
-                          <div className="sort-dropdown-section">
-                            <div className="sort-dropdown-label">Sort order:</div>
-                            <button type="button" className={`sort-option ${sortConfig.direction === 'desc' ? 'selected' : ''}`} onClick={() => setSortConfig((prev) => ({ ...prev, direction: 'desc' }))}>
-                              Descending
-                            </button>
-                            <button type="button" className={`sort-option ${sortConfig.direction === 'asc' ? 'selected' : ''}`} onClick={() => setSortConfig((prev) => ({ ...prev, direction: 'asc' }))}>
-                              Ascending
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </th>
                   <th></th>
