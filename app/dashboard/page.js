@@ -42,8 +42,6 @@ function SortIcon() {
       <path d="M8 6h13" />
       <path d="M8 12h9" />
       <path d="M8 18h5" />
-      <path d="m3 8 3-3 3 3" />
-      <path d="m3 16 3 3 3-3" />
     </svg>
   )
 }
@@ -55,7 +53,7 @@ export default function DashboardPage() {
   const [savedDivisions, setSavedDivisions] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [filters, setFilters] = useState({ division: '', requestor: '', status: '', projectType: '', priority: '' })
+  const [filters, setFilters] = useState({ division: '', requestor: '', status: '', projectType: '', priority: [] })
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
   const [viewMenuOpen, setViewMenuOpen] = useState(false)
@@ -114,7 +112,7 @@ export default function DashboardPage() {
       if (filters.requestor && !(p.requestors ?? []).includes(filters.requestor)) return false
       if (filters.status && p.status !== filters.status) return false
       if (filters.projectType && p.project_type !== filters.projectType) return false
-      if (filters.priority && getPriority(p)?.label !== filters.priority) return false
+      if (filters.priority && filters.priority.length > 0 && !filters.priority.includes(getPriority(p)?.label)) return false
       if (search) {
         const q = search.toLowerCase()
         if (!String(p.project_code ?? '').toLowerCase().includes(q) && !String(p.title ?? '').toLowerCase().includes(q)) return false
@@ -242,6 +240,7 @@ export default function DashboardPage() {
             onClearExtra={() => setSearch('')}
             pageSize={pageSize}
             onPageSizeChange={setPageSize}
+            priorityMulti
           />
           <div className="dashboard-top-buttons">
             {!isGuest && (
@@ -273,51 +272,48 @@ export default function DashboardPage() {
                   <th>Status Project</th>
                   <th>Start Date</th>
                   <th>Finish Date</th>
-                  <th className="priority-scoring-header">
-                    <div className="priority-scoring-header-content">
-                      <span>Priority Scoring</span>
-                      <div className="sort-control" ref={sortRef}>
-                        <button
-                          type="button"
-                          className={`sort-icon-btn ${sortMenuOpen ? 'active' : ''}`}
-                          onClick={() => setSortMenuOpen((v) => !v)}
-                          title="Sort project"
-                          aria-label="Sort project"
-                        >
-                          <SortIcon />
-                        </button>
-                        {sortMenuOpen && (
-                          <div className="sort-dropdown">
-                            <div className="sort-dropdown-section">
-                              <div className="sort-dropdown-label">Sort by:</div>
-                              {SORT_OPTIONS.map((option) => (
-                                <button
-                                  type="button"
-                                  key={option.value}
-                                  className={`sort-option ${sortConfig.key === option.value ? 'selected' : ''}`}
-                                  onClick={() => selectSort(option.value)}
-                                >
-                                  <span>{option.label}</span>
-                                  {sortConfig.key === option.value && <span className="sort-option-arrow">›</span>}
-                                </button>
-                              ))}
-                            </div>
-                            <div className="sort-dropdown-divider" />
-                            <div className="sort-dropdown-section">
-                              <div className="sort-dropdown-label">Sort order:</div>
-                              <button type="button" className={`sort-option ${sortConfig.direction === 'desc' ? 'selected' : ''}`} onClick={() => setSortConfig((prev) => ({ ...prev, direction: 'desc' }))}>
-                                Descending
+                  <th className="priority-scoring-header">Priority Scoring</th>
+                  <th className="row-menu-header">
+                    <div className="sort-control" ref={sortRef}>
+                      <button
+                        type="button"
+                        className={`sort-icon-btn ${sortMenuOpen ? 'active' : ''}`}
+                        onClick={() => setSortMenuOpen((v) => !v)}
+                        title="Sort project"
+                        aria-label="Sort project"
+                      >
+                        <SortIcon />
+                      </button>
+                      {sortMenuOpen && (
+                        <div className="sort-dropdown">
+                          <div className="sort-dropdown-section">
+                            <div className="sort-dropdown-label">Sort by:</div>
+                            {SORT_OPTIONS.map((option) => (
+                              <button
+                                type="button"
+                                key={option.value}
+                                className={`sort-option ${sortConfig.key === option.value ? 'selected' : ''}`}
+                                onClick={() => selectSort(option.value)}
+                              >
+                                <span>{option.label}</span>
+                                {sortConfig.key === option.value && <span className="sort-option-arrow">›</span>}
                               </button>
-                              <button type="button" className={`sort-option ${sortConfig.direction === 'asc' ? 'selected' : ''}`} onClick={() => setSortConfig((prev) => ({ ...prev, direction: 'asc' }))}>
-                                Ascending
-                              </button>
-                            </div>
+                            ))}
                           </div>
-                        )}
-                      </div>
+                          <div className="sort-dropdown-divider" />
+                          <div className="sort-dropdown-section">
+                            <div className="sort-dropdown-label">Sort order:</div>
+                            <button type="button" className={`sort-option ${sortConfig.direction === 'desc' ? 'selected' : ''}`} onClick={() => setSortConfig((prev) => ({ ...prev, direction: 'desc' }))}>
+                              Descending
+                            </button>
+                            <button type="button" className={`sort-option ${sortConfig.direction === 'asc' ? 'selected' : ''}`} onClick={() => setSortConfig((prev) => ({ ...prev, direction: 'asc' }))}>
+                              Ascending
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </th>
-                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -331,20 +327,20 @@ export default function DashboardPage() {
                       <td>{(currentPage - 1) * pageSize + index + 1}</td>
                       <td>#{p.project_code}</td>
                       <td>{p.title}</td>
-                      <td>{p.project_type || '-'}</td>
-                      <td><RequestorTags names={p.requestors ?? []} /></td>
-                      <td>{(p.divisions ?? []).join(', ')}</td>
-                      <td><StatusBadge status={p.status} /></td>
-                      <td>{startDate ? format(parseISO(startDate), 'd MMM yyyy') : '-'}</td>
-                      <td>{finishDate ? format(parseISO(finishDate), 'd MMM yyyy') : '-'}</td>
-                      <td>
+                      <td className="cell-center">{p.project_type || '-'}</td>
+                      <td className="cell-center"><RequestorTags names={p.requestors ?? []} /></td>
+                      <td className="cell-center">{(p.divisions ?? []).join(', ')}</td>
+                      <td className="cell-center"><StatusBadge status={p.status} /></td>
+                      <td className="cell-center">{startDate ? format(parseISO(startDate), 'd MMM yyyy') : '-'}</td>
+                      <td className="cell-center">{finishDate ? format(parseISO(finishDate), 'd MMM yyyy') : '-'}</td>
+                      <td className="priority-scoring-cell">
                         {priority ? (
                           <span className="priority-table-value" style={{ color: priority.color, background: priority.bg }}>
                             {priority.label} ({priority.total})
                           </span>
                         ) : '-'}
                       </td>
-                      <td>
+                      <td className="row-menu-cell">
                         <RowMenu
                           isGuest={isGuest}
                           onEdit={() => openEdit(p)}
