@@ -9,6 +9,7 @@ import CalendarView from '@/components/CalendarView'
 import LogDetailModal from '@/components/LogDetailModal'
 import { createClient } from '@/lib/supabaseClient'
 import { useCurrentUser } from '@/lib/useCurrentUser'
+import { impactBand } from '@/lib/constants'
 
 export default function CalendarPage() {
   const [logs, setLogs] = useState([])
@@ -18,7 +19,7 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [selectedLog, setSelectedLog] = useState(null)
-  const [filters, setFilters] = useState({ division: '', requestor: '', status: '', projectType: '' })
+  const [filters, setFilters] = useState({ division: '', requestor: '', status: '', projectType: '', priority: '' })
   const [search, setSearch] = useState('')
   const router = useRouter()
   const supabase = createClient()
@@ -45,6 +46,13 @@ export default function CalendarPage() {
 
   const requestorOptions = useMemo(() => savedRequestors.map((r) => r.name), [savedRequestors])
   const divisionOptions = useMemo(() => savedDivisions.map((d) => d.name), [savedDivisions])
+  function getPriority(project) {
+    const values = [project?.q1_score, project?.q2_score, project?.q3_score, project?.q4_score]
+    if (values.some((v) => v === null || v === undefined || v === '')) return null
+    const total = values.reduce((sum, v) => sum + Number(v), 0)
+    return { total, ...impactBand(total) }
+  }
+
   const projectsById = useMemo(() => {
     const map = {}
     for (const proj of projects) map[proj.id] = proj
@@ -59,6 +67,7 @@ export default function CalendarPage() {
       if (filters.requestor && !(proj.requestors ?? []).includes(filters.requestor)) return false
       if (filters.status && proj.status !== filters.status) return false
       if (filters.projectType && proj.project_type !== filters.projectType) return false
+      if (filters.priority && getPriority(proj)?.label !== filters.priority) return false
       if (search) {
         const q = search.toLowerCase()
         if (!proj.project_code.includes(q) && !proj.title.toLowerCase().includes(q)) return false
