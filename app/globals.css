@@ -1539,25 +1539,39 @@ body {
 }
 
 /* ============ Priority scoring + table sort ============ */
-.project-table th.priority-scoring-header {
-  position: relative;
-  white-space: nowrap;
+.cell-center {
+  text-align: center;
 }
-.priority-scoring-header-content {
+.priority-scoring-header {
+  text-align: center;
+  white-space: normal;
+  word-break: normal;
+  overflow-wrap: break-word;
+  width: 140px;
+  max-width: 140px;
+}
+.priority-scoring-cell {
+  text-align: center;
+  white-space: nowrap;
+  width: 140px;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.row-menu-header {
+  text-align: center;
+  white-space: nowrap;
+  width: 1%;
   position: relative;
-  min-height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding-right: 34px;
+}
+.row-menu-cell {
+  text-align: center;
+  white-space: nowrap;
+  width: 1%;
 }
 .sort-control {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  position: relative;
   display: inline-flex;
-  flex-shrink: 0;
 }
 .sort-icon-btn {
   width: 28px;
