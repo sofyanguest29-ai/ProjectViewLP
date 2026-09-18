@@ -215,6 +215,15 @@ body {
   text-align: left;
   font-size: 14px;
   border-bottom: 1px solid #f1f1f1;
+  white-space: nowrap;
+}
+
+/* Nama Project & Nama Requestor are excluded from the no-wrap rule above -
+   their content can still be long, so they're allowed to wrap normally
+   (point 3) instead of forcing the table wider than necessary. */
+.project-table td.wrap-cell {
+  white-space: normal;
+  word-break: break-word;
 }
 
 .project-table th {
@@ -405,7 +414,7 @@ body {
 
 /* ============ Wide container ============ */
 .container-wide {
-  max-width: 1280px;
+  max-width: 1560px;
 }
 
 /* ============ Dashboard two-row top layout ============ */
