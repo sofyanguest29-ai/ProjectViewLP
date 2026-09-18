@@ -26,6 +26,7 @@ const SORT_OPTIONS = [
   { value: 'status', label: 'Status Project' },
   { value: 'start_date', label: 'Start Date' },
   { value: 'finish_date', label: 'Finish Date' },
+  { value: 'estimated_finish_date', label: 'Estimated Finished' },
   { value: 'priority', label: 'Priority Scoring' },
 ]
 
@@ -136,6 +137,7 @@ export default function DashboardPage() {
         case 'status': return String(project.status ?? '')
         case 'start_date': return computeStartDate(logs) ?? ''
         case 'finish_date': return computeFinishDate(logs) ?? ''
+        case 'estimated_finish_date': return project.estimated_finish_date ?? ''
         case 'priority': return priority?.total ?? -1
         default: return ''
       }
@@ -272,6 +274,7 @@ export default function DashboardPage() {
                   <th>Status Project</th>
                   <th>Start Date</th>
                   <th>Finish Date</th>
+                  <th>Estimated Finished</th>
                   <th className="priority-scoring-header">Priority Scoring</th>
                   <th className="row-menu-header">
                     <div className="sort-control" ref={sortRef}>
@@ -326,13 +329,14 @@ export default function DashboardPage() {
                     <tr key={p.id} onDoubleClick={() => router.push(`/dashboard/project/${p.id}`)}>
                       <td>{(currentPage - 1) * pageSize + index + 1}</td>
                       <td>#{p.project_code}</td>
-                      <td>{p.title}</td>
+                      <td className="wrap-cell">{p.title}</td>
                       <td className="cell-center">{p.project_type || '-'}</td>
-                      <td className="cell-center"><RequestorTags names={p.requestors ?? []} /></td>
+                      <td className="cell-center wrap-cell"><RequestorTags names={p.requestors ?? []} /></td>
                       <td className="cell-center">{(p.divisions ?? []).join(', ')}</td>
                       <td className="cell-center"><StatusBadge status={p.status} /></td>
                       <td className="cell-center">{startDate ? format(parseISO(startDate), 'd MMM yyyy') : '-'}</td>
                       <td className="cell-center">{finishDate ? format(parseISO(finishDate), 'd MMM yyyy') : '-'}</td>
+                      <td className="cell-center">{p.estimated_finish_date ? format(parseISO(p.estimated_finish_date), 'd MMM yyyy') : '-'}</td>
                       <td className="priority-scoring-cell">
                         {priority ? (
                           <span className="priority-table-value" style={{ color: priority.color, background: priority.bg }}>
@@ -353,7 +357,7 @@ export default function DashboardPage() {
                 })}
                 {paginatedProjects.length === 0 && (
                   <tr>
-                    <td colSpan={11} className="empty-state">Tidak ada project.</td>
+                    <td colSpan={12} className="empty-state">Tidak ada project.</td>
                   </tr>
                 )}
               </tbody>
