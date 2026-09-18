@@ -55,6 +55,7 @@ alter table public.projects add column if not exists q2_score int;
 alter table public.projects add column if not exists q3_score int;
 alter table public.projects add column if not exists q4_score int;
 alter table public.projects add column if not exists project_type text;
+alter table public.projects add column if not exists estimated_finish_date date;
 alter table public.development_logs add column if not exists detail text;
 
 alter table public.projects enable row level security;
