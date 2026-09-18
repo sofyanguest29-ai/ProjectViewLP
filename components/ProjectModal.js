@@ -32,6 +32,7 @@ export default function ProjectModal({
   const [impacts, setImpacts] = useState(seed?.impacts ?? {})
   const [requirements, setRequirements] = useState(seed?.requirements ?? '')
   const [status, setStatus] = useState(seed?.status ?? 'backlog')
+  const [estimatedDate, setEstimatedDate] = useState(seed?.estimated_finish_date ?? '')
   const [scores, setScores] = useState({
     q1_score: seed?.q1_score ?? null,
     q2_score: seed?.q2_score ?? null,
@@ -91,6 +92,7 @@ export default function ProjectModal({
         impacts,
         requirements,
         status,
+        estimated_finish_date: estimatedDate || null,
         q1_score: scores.q1_score,
         q2_score: scores.q2_score,
         q3_score: scores.q3_score,
@@ -205,6 +207,11 @@ export default function ProjectModal({
           <div className="field-block">
             <label>Development Log</label>
             <DevelopmentLogEditor logs={logs} onChange={setLogs} allProjects={allProjects} />
+          </div>
+
+          <div className="field-block">
+            <label>Estimated Date</label>
+            <input type="date" value={estimatedDate} onChange={(e) => setEstimatedDate(e.target.value)} />
           </div>
 
           <div className="field-block">
