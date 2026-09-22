@@ -54,7 +54,7 @@ export default function DashboardPage() {
   const [savedDivisions, setSavedDivisions] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
-  const [filters, setFilters] = useState({ division: '', requestor: '', status: '', projectType: '', priority: [] })
+  const [filters, setFilters] = useState({ division: '', requestor: '', status: [], projectType: [], priority: [] })
   const [pageSize, setPageSize] = useState(10)
   const [currentPage, setCurrentPage] = useState(1)
   const [viewMenuOpen, setViewMenuOpen] = useState(false)
@@ -111,8 +111,8 @@ export default function DashboardPage() {
     return projects.filter((p) => {
       if (filters.division && !(p.divisions ?? []).includes(filters.division)) return false
       if (filters.requestor && !(p.requestors ?? []).includes(filters.requestor)) return false
-      if (filters.status && p.status !== filters.status) return false
-      if (filters.projectType && p.project_type !== filters.projectType) return false
+      if (filters.status && filters.status.length > 0 && !filters.status.includes(p.status)) return false
+      if (filters.projectType && filters.projectType.length > 0 && !filters.projectType.includes(p.project_type)) return false
       if (filters.priority && filters.priority.length > 0 && !filters.priority.includes(getPriority(p)?.label)) return false
       if (search) {
         const q = search.toLowerCase()
@@ -242,7 +242,6 @@ export default function DashboardPage() {
             onClearExtra={() => setSearch('')}
             pageSize={pageSize}
             onPageSizeChange={setPageSize}
-            priorityMulti
           />
           <div className="dashboard-top-buttons">
             {!isGuest && (
