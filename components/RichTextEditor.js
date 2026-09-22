@@ -1,13 +1,16 @@
 'use client'
 import { useRef, useState, useEffect } from 'react'
 
-// Editor teks sederhana dengan toolbar dasar (bold, italic, underline, align, list)
-// plus fitur tag project (insert tag "#kode - judul" dari project yang sudah ada).
+// Editor teks sederhana dengan toolbar dasar (bold, italic, underline, align, list),
+// fitur tag project ("#kode - judul" dari project yang sudah ada), dan paste gambar
+// yang bisa langsung di-resize (drag pojok kanan bawah gambar).
 export default function RichTextEditor({ value, onChange, placeholder, allProjects = [] }) {
   const ref = useRef(null)
   const savedRange = useRef(null)
   const [showTagPicker, setShowTagPicker] = useState(false)
   const [tagQuery, setTagQuery] = useState('')
+  const [selectedImg, setSelectedImg] = useState(null)
+  const [handlePos, setHandlePos] = useState(null)
   const initialized = useRef(false)
 
   useEffect(() => {
@@ -72,6 +75,71 @@ export default function RichTextEditor({ value, onChange, placeholder, allProjec
     handleInput()
   }
 
+  // ============ Paste gambar ============
+  function handlePaste(e) {
+    const items = e.clipboardData?.items
+    if (!items) return
+    for (const item of items) {
+      if (item.type && item.type.startsWith('image/')) {
+        e.preventDefault()
+        const file = item.getAsFile()
+        if (!file) continue
+        const reader = new FileReader()
+        reader.onload = () => {
+          const imgHtml = `<img src="${reader.result}" class="rte-pasted-image" style="width:320px;max-width:100%;" />`
+          document.execCommand('insertHTML', false, imgHtml)
+          handleInput()
+        }
+        reader.readAsDataURL(file)
+        return
+      }
+    }
+  }
+
+  // ============ Resize gambar (drag handle) ============
+  function updateHandlePosition(img) {
+    if (!img || !ref.current) return
+    const imgRect = img.getBoundingClientRect()
+    const editorRect = ref.current.getBoundingClientRect()
+    setHandlePos({
+      top: imgRect.bottom - editorRect.top + ref.current.scrollTop - 8,
+      left: imgRect.right - editorRect.left + ref.current.scrollLeft - 8,
+    })
+  }
+
+  function handleEditorClick(e) {
+    if (e.target.tagName === 'IMG') {
+      setSelectedImg(e.target)
+      updateHandlePosition(e.target)
+    } else if (selectedImg) {
+      setSelectedImg(null)
+      setHandlePos(null)
+    }
+  }
+
+  function handleResizeMouseDown(e) {
+    e.preventDefault()
+    e.stopPropagation()
+    const img = selectedImg
+    if (!img) return
+    const startX = e.clientX
+    const startWidth = img.offsetWidth
+
+    function onMouseMove(moveEvent) {
+      const newWidth = Math.max(30, startWidth + (moveEvent.clientX - startX))
+      img.style.width = `${newWidth}px`
+      img.style.height = 'auto'
+      updateHandlePosition(img)
+    }
+    function onMouseUp() {
+      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('mouseup', onMouseUp)
+      handleInput()
+    }
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup', onMouseUp)
+  }
+
   const filteredProjects = allProjects.filter((p) =>
     `${p.project_code} ${p.title}`.toLowerCase().includes(tagQuery.toLowerCase())
   )
@@ -123,17 +191,28 @@ export default function RichTextEditor({ value, onChange, placeholder, allProjec
         </div>
       )}
 
-      <div
-        ref={ref}
-        className="rte-content"
-        contentEditable
-        suppressContentEditableWarning
-        onInput={handleInput}
-        onBlur={() => { saveSelection(); handleInput() }}
-        onKeyUp={saveSelection}
-        onMouseUp={saveSelection}
-        data-placeholder={placeholder}
-      />
+      <div className="rte-content-wrapper">
+        <div
+          ref={ref}
+          className="rte-content"
+          contentEditable
+          suppressContentEditableWarning
+          onInput={handleInput}
+          onBlur={() => { saveSelection(); handleInput() }}
+          onKeyUp={saveSelection}
+          onMouseUp={saveSelection}
+          onPaste={handlePaste}
+          onClick={handleEditorClick}
+          data-placeholder={placeholder}
+        />
+        {selectedImg && handlePos && (
+          <div
+            className="rte-image-resize-handle"
+            style={{ top: handlePos.top, left: handlePos.left }}
+            onMouseDown={handleResizeMouseDown}
+          />
+        )}
+      </div>
     </div>
   )
 }

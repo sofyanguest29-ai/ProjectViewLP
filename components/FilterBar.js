@@ -1,10 +1,12 @@
 'use client'
 import { PROJECT_STATUS, PROJECT_TYPES, PAGE_SIZE_OPTIONS } from '@/lib/constants'
 import SearchableSelect from './SearchableSelect'
-import MultiSelect from './MultiSelect'
+import MultiFilterSelect from './MultiFilterSelect'
 
 const PRIORITY_LABELS = ['High', 'Medium', 'Low']
 const PRIORITY_OPTIONS = PRIORITY_LABELS.map((v) => ({ value: v, label: v }))
+
+const EMPTY_FILTERS = { division: '', requestor: '', status: [], projectType: [], priority: [] }
 
 function FilterIcon() {
   return (
@@ -22,10 +24,7 @@ export default function FilterBar({
   onClearExtra,
   pageSize,
   onPageSizeChange,
-  priorityMulti = false,
 }) {
-  const EMPTY_FILTERS = { division: '', requestor: '', status: '', projectType: '', priority: priorityMulti ? [] : '' }
-
   function update(field, value) {
     onChange({ ...filters, [field]: value })
   }
@@ -64,42 +63,30 @@ export default function FilterBar({
       </div>
       <div className="filter-group">
         <label>Status Project</label>
-        <SearchableSelect
+        <MultiFilterSelect
           options={statusOptions}
-          value={filters.status}
+          selected={filters.status || []}
           onChange={(v) => update('status', v)}
-          allLabel="Semua Status"
-          placeholder="Cari status..."
+          placeholder="Semua Status"
         />
       </div>
       <div className="filter-group">
         <label>Project Type</label>
-        <SearchableSelect
+        <MultiFilterSelect
           options={projectTypeOptions}
-          value={filters.projectType}
+          selected={filters.projectType || []}
           onChange={(v) => update('projectType', v)}
-          allLabel="Semua Project Type"
-          placeholder="Cari project type..."
+          placeholder="Semua Project Type"
         />
       </div>
       <div className="filter-group">
         <label>Priority Scoring</label>
-        {priorityMulti ? (
-          <MultiSelect
-            options={PRIORITY_LABELS}
-            selected={filters.priority || []}
-            onChange={(v) => update('priority', v)}
-            placeholder="Semua Priority"
-          />
-        ) : (
-          <SearchableSelect
-            options={PRIORITY_OPTIONS}
-            value={filters.priority}
-            onChange={(v) => update('priority', v)}
-            allLabel="Semua Priority"
-            placeholder="Cari priority..."
-          />
-        )}
+        <MultiFilterSelect
+          options={PRIORITY_OPTIONS}
+          selected={filters.priority || []}
+          onChange={(v) => update('priority', v)}
+          placeholder="Semua Priority"
+        />
       </div>
       {pageSize !== undefined && onPageSizeChange && (
         <div className="filter-group">
