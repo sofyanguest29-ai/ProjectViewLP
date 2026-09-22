@@ -19,7 +19,7 @@ export default function CalendarPage() {
   const [loading, setLoading] = useState(true)
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [selectedLog, setSelectedLog] = useState(null)
-  const [filters, setFilters] = useState({ division: '', requestor: '', status: '', projectType: '', priority: [] })
+  const [filters, setFilters] = useState({ division: '', requestor: '', status: [], projectType: [], priority: [] })
   const [search, setSearch] = useState('')
   const router = useRouter()
   const supabase = createClient()
@@ -65,8 +65,8 @@ export default function CalendarPage() {
       if (!proj) return false
       if (filters.division && !(proj.divisions ?? []).includes(filters.division)) return false
       if (filters.requestor && !(proj.requestors ?? []).includes(filters.requestor)) return false
-      if (filters.status && proj.status !== filters.status) return false
-      if (filters.projectType && proj.project_type !== filters.projectType) return false
+      if (filters.status && filters.status.length > 0 && !filters.status.includes(proj.status)) return false
+      if (filters.projectType && filters.projectType.length > 0 && !filters.projectType.includes(proj.project_type)) return false
       if (filters.priority && filters.priority.length > 0 && !filters.priority.includes(getPriority(proj)?.label)) return false
       if (search) {
         const q = search.toLowerCase()
@@ -101,7 +101,6 @@ export default function CalendarPage() {
             requestorOptions={requestorOptions}
             divisionOptions={divisionOptions}
             onClearExtra={() => setSearch('')}
-            priorityMulti
           />
           <div className="filter-group">
             <label>Pilih Tanggal</label>
