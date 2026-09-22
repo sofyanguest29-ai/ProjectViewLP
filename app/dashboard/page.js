@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { format, parseISO } from 'date-fns'
@@ -64,6 +65,9 @@ export default function DashboardPage() {
   const [editingProject, setEditingProject] = useState(null)
   const [editingLogs, setEditingLogs] = useState([])
   const sortRef = useRef(null)
+  const sortTriggerRef = useRef(null)
+  const sortDropdownRef = useRef(null)
+  const [sortDropdownPos, setSortDropdownPos] = useState({ top: 0, left: 0 })
   const router = useRouter()
   const supabase = createClient()
   const { isGuest } = useCurrentUser()
@@ -89,7 +93,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     function handleOutsideClick(event) {
-      if (sortRef.current && !sortRef.current.contains(event.target)) setSortMenuOpen(false)
+      const insideTrigger = sortRef.current && sortRef.current.contains(event.target)
+      const insideDropdown = sortDropdownRef.current && sortDropdownRef.current.contains(event.target)
+      if (!insideTrigger && !insideDropdown) setSortMenuOpen(false)
     }
     document.addEventListener('mousedown', handleOutsideClick)
     return () => document.removeEventListener('mousedown', handleOutsideClick)
@@ -279,41 +285,55 @@ export default function DashboardPage() {
                     <div className="sort-control" ref={sortRef}>
                       <button
                         type="button"
+                        ref={sortTriggerRef}
                         className={`sort-icon-btn ${sortMenuOpen ? 'active' : ''}`}
-                        onClick={() => setSortMenuOpen((v) => !v)}
+                        onClick={() => {
+                          if (!sortMenuOpen && sortTriggerRef.current) {
+                            const rect = sortTriggerRef.current.getBoundingClientRect()
+                            setSortDropdownPos({ top: rect.bottom + 4, left: Math.max(8, rect.right - 240) })
+                          }
+                          setSortMenuOpen((v) => !v)
+                        }}
                         title="Sort project"
                         aria-label="Sort project"
                       >
                         <SortIcon />
                       </button>
-                      {sortMenuOpen && (
-                        <div className="sort-dropdown">
-                          <div className="sort-dropdown-section">
-                            <div className="sort-dropdown-label">Sort by:</div>
-                            {SORT_OPTIONS.map((option) => (
-                              <button
-                                type="button"
-                                key={option.value}
-                                className={`sort-option ${sortConfig.key === option.value ? 'selected' : ''}`}
-                                onClick={() => selectSort(option.value)}
-                              >
-                                <span>{option.label}</span>
-                                {sortConfig.key === option.value && <span className="sort-option-arrow">›</span>}
+                      {sortMenuOpen &&
+                        typeof document !== 'undefined' &&
+                        createPortal(
+                          <div
+                            className="sort-dropdown"
+                            ref={sortDropdownRef}
+                            style={{ position: 'fixed', top: sortDropdownPos.top, left: sortDropdownPos.left }}
+                          >
+                            <div className="sort-dropdown-section">
+                              <div className="sort-dropdown-label">Sort by:</div>
+                              {SORT_OPTIONS.map((option) => (
+                                <button
+                                  type="button"
+                                  key={option.value}
+                                  className={`sort-option ${sortConfig.key === option.value ? 'selected' : ''}`}
+                                  onClick={() => selectSort(option.value)}
+                                >
+                                  <span>{option.label}</span>
+                                  {sortConfig.key === option.value && <span className="sort-option-arrow">›</span>}
+                                </button>
+                              ))}
+                            </div>
+                            <div className="sort-dropdown-divider" />
+                            <div className="sort-dropdown-section">
+                              <div className="sort-dropdown-label">Sort order:</div>
+                              <button type="button" className={`sort-option ${sortConfig.direction === 'desc' ? 'selected' : ''}`} onClick={() => setSortConfig((prev) => ({ ...prev, direction: 'desc' }))}>
+                                Descending
                               </button>
-                            ))}
-                          </div>
-                          <div className="sort-dropdown-divider" />
-                          <div className="sort-dropdown-section">
-                            <div className="sort-dropdown-label">Sort order:</div>
-                            <button type="button" className={`sort-option ${sortConfig.direction === 'desc' ? 'selected' : ''}`} onClick={() => setSortConfig((prev) => ({ ...prev, direction: 'desc' }))}>
-                              Descending
-                            </button>
-                            <button type="button" className={`sort-option ${sortConfig.direction === 'asc' ? 'selected' : ''}`} onClick={() => setSortConfig((prev) => ({ ...prev, direction: 'asc' }))}>
-                              Ascending
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                              <button type="button" className={`sort-option ${sortConfig.direction === 'asc' ? 'selected' : ''}`} onClick={() => setSortConfig((prev) => ({ ...prev, direction: 'asc' }))}>
+                                Ascending
+                              </button>
+                            </div>
+                          </div>,
+                          document.body
+                        )}
                     </div>
                   </th>
                 </tr>
