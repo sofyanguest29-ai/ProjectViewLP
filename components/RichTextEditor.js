@@ -68,7 +68,7 @@ export default function RichTextEditor({ value, onChange, placeholder, allProjec
 
   function insertTag(project) {
     restoreSelection()
-    const tagHtml = `<span class="project-tag" contenteditable="false">#${project.project_code} - ${project.title}</span>&nbsp;`
+    const tagHtml = `<span class="project-tag" data-project-id="${project.id}" contenteditable="false">#${project.project_code} - ${project.title}</span>&nbsp;`
     document.execCommand('insertHTML', false, tagHtml)
     setShowTagPicker(false)
     setTagQuery('')

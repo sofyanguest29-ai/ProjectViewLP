@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { PROJECT_STATUS } from '@/lib/constants'
 
-export default function RowMenu({ onEdit, onDelete, onChangeStatus, isGuest }) {
+export default function RowMenu({ onEdit, onDuplicate, onDelete, onChangeStatus, isGuest }) {
   const [open, setOpen] = useState(false)
   const [statusSubmenu, setStatusSubmenu] = useState(false)
   const [position, setPosition] = useState({ top: 0, left: 0 })
@@ -49,6 +49,7 @@ export default function RowMenu({ onEdit, onDelete, onChangeStatus, isGuest }) {
             onClick={(e) => e.stopPropagation()}
           >
             <button type="button" onClick={() => { setOpen(false); onEdit?.() }}>Edit</button>
+            <button type="button" onClick={() => { setOpen(false); onDuplicate?.() }}>Duplicate</button>
             <button type="button" onClick={() => { setOpen(false); onDelete?.() }}>Delete</button>
             <div
               className="row-menu-status"
