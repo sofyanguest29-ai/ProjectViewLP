@@ -8,6 +8,7 @@ import LogDetailModal from '@/components/LogDetailModal'
 import QuickAddLogModal from '@/components/QuickAddLogModal'
 import ProjectModal from '@/components/ProjectModal'
 import SearchableSelect from '@/components/SearchableSelect'
+import RichContent from '@/components/RichContent'
 import { createClient } from '@/lib/supabaseClient'
 import { useCurrentUser } from '@/lib/useCurrentUser'
 import { DEV_LOG_STATUS, QUESTIONNAIRE, impactBand } from '@/lib/constants'
@@ -50,6 +51,14 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     load()
   }, [load])
+
+  // Pindah ke project lain (lewat klik tag) -> tutup modal yang masih terbuka
+  useEffect(() => {
+    setSelectedLog(null)
+    setEditing(false)
+    setAddingLog(false)
+    window.scrollTo?.(0, 0)
+  }, [id])
 
   const filteredLogs = useMemo(() => {
     return logs.filter((l) => {
@@ -123,7 +132,7 @@ export default function ProjectDetailPage() {
 
           <div className="field-block">
             <label>Objective</label>
-            <div className="rte-readonly" dangerouslySetInnerHTML={{ __html: project.objective || '-' }} />
+            <RichContent html={project.objective || '-'} allProjects={allProjects} />
           </div>
           <div className="field-block" />
 
@@ -138,7 +147,7 @@ export default function ProjectDetailPage() {
 
           <div className="field-block">
             <label>Expected Result</label>
-            <div className="rte-readonly" dangerouslySetInnerHTML={{ __html: project.expected_result || '-' }} />
+            <RichContent html={project.expected_result || '-'} allProjects={allProjects} />
           </div>
           <div className="field-block" />
 
@@ -157,14 +166,14 @@ export default function ProjectDetailPage() {
             {Object.entries(project.impacts ?? {}).map(([type, detail]) => (
               <div key={type} className="impact-readonly-row">
                 <strong>{type}:</strong>
-                <div className="rte-readonly" dangerouslySetInnerHTML={{ __html: detail || '-' }} />
+                <RichContent html={detail || '-'} allProjects={allProjects} />
               </div>
             ))}
           </div>
 
           <div className="field-block detail-grid-full">
             <label>Requirements</label>
-            <div className="rte-readonly" dangerouslySetInnerHTML={{ __html: project.requirements || '-' }} />
+            <RichContent html={project.requirements || '-'} allProjects={allProjects} />
           </div>
         </div>
 
