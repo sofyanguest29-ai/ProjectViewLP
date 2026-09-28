@@ -1711,3 +1711,201 @@ body {
     font-size: 11px;
   }
 }
+
+/* ============ Dashboard: semua tombol & filter dalam 1 baris ============ */
+.dashboard-filter-row {
+  flex-wrap: nowrap;
+  align-items: flex-end;
+}
+.dashboard-filter-row > .filter-bar,
+.dashboard-filter-row > :first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.dashboard-filter-row .dashboard-top-buttons {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+}
+.add-log-btn {
+  background: white;
+  color: #4f46e5;
+  border: 1px solid #4f46e5;
+  padding: 9px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  height: 38px;
+  box-sizing: border-box;
+}
+.add-log-btn:hover {
+  background: #eef2ff;
+}
+
+/* ============ Modal Add Log Development (3/4 layar) ============ */
+.modal-panel-bulk {
+  width: 75vw;
+  max-width: 1100px;
+  height: 85vh;
+}
+.bulk-estimated-row {
+  display: grid;
+  grid-template-columns: 150px 1fr 36px;
+  gap: 8px;
+  align-items: center;
+}
+.bulk-estimated-row input[type="date"] {
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+/* Baris log development + checklist project (modal Add Log Development) */
+.devlog-block .devlog-row.devlog-row-with-projects {
+  grid-template-columns: 140px minmax(0, 1fr) 120px 34px 34px 200px;
+}
+.modal-panel-bulk .bulk-estimated-row {
+  grid-template-columns: 140px 1fr 34px;
+}
+.modal-panel-bulk .devlog-block {
+  padding: 8px;
+}
+
+/* ============ Project multi select (checklist) ============ */
+.pms {
+  position: relative;
+  min-width: 0;
+}
+.pms-trigger {
+  width: 100%;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 0 10px;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.pms-placeholder {
+  color: #9ca3af;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pms-chips {
+  display: flex;
+  gap: 4px;
+  overflow: hidden;
+}
+.pms-chip {
+  background: #eef2ff;
+  color: #4338ca;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.pms-chip-more {
+  background: #e5e7eb;
+  color: #374151;
+}
+.pms-caret {
+  color: #6b7280;
+  font-size: 11px;
+}
+.pms-dropdown {
+  position: fixed;
+  z-index: 9999;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.pms-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #f1f1f1;
+  background: #f9fafb;
+}
+.pms-toolbar input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.pms-all {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.pms-list {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px;
+}
+.pms-item {
+  display: grid;
+  grid-template-columns: 18px 64px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.pms-item:hover {
+  background: #f3f4f6;
+}
+.pms-item.selected {
+  background: #eef2ff;
+}
+.pms-code {
+  font-weight: 700;
+  color: #4f46e5;
+}
+.pms-title {
+  color: #374151;
+}
+.pms-empty {
+  padding: 12px;
+  font-size: 13px;
+  color: #6b7280;
+  text-align: center;
+}
+.pms-footer {
+  padding: 6px 12px;
+  font-size: 12px;
+  color: #6b7280;
+  border-top: 1px solid #f1f1f1;
+  background: #f9fafb;
+}
+
+/* Tag project yang bisa diklik di halaman detail (read-only) */
+.rte-readonly .project-tag {
+  cursor: pointer;
+  text-decoration: none;
+}
+.rte-readonly .project-tag:hover {
+  background: #c7d2fe;
+  text-decoration: underline;
+}
