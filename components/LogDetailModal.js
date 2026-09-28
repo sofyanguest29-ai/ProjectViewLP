@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabaseClient'
 import { DEV_LOG_STATUS } from '@/lib/constants'
 import { format, parseISO } from 'date-fns'
 import RichTextEditor from './RichTextEditor'
+import RichContent from './RichContent'
 
 export default function LogDetailModal({ log, isGuest, allProjects = [], onClose, onSaved }) {
   const supabase = createClient()
@@ -73,7 +74,7 @@ export default function LogDetailModal({ log, isGuest, allProjects = [], onClose
             {editing ? (
               <RichTextEditor value={detail} onChange={setDetail} allProjects={allProjects} placeholder="Detail development log..." />
             ) : log.detail ? (
-              <div className="rte-readonly" dangerouslySetInnerHTML={{ __html: log.detail }} />
+              <RichContent html={log.detail} allProjects={allProjects} onNavigate={onClose} />
             ) : (
               <span className="empty-state">Belum ada detail.</span>
             )}

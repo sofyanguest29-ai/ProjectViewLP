@@ -2,9 +2,10 @@
 import { useState } from 'react'
 import { DEV_LOG_STATUS } from '@/lib/constants'
 import RichTextEditor from './RichTextEditor'
+import ProjectMultiSelect from './ProjectMultiSelect'
 
 // logs: array of { id (temp or real), log_date, title, status, detail }
-export default function DevelopmentLogEditor({ logs, onChange, allProjects = [] }) {
+export default function DevelopmentLogEditor({ logs, onChange, allProjects = [], showProjectSelect = false }) {
   const [expanded, setExpanded] = useState({})
 
   function updateLog(index, field, value) {
@@ -16,7 +17,7 @@ export default function DevelopmentLogEditor({ logs, onChange, allProjects = [] 
   function addLog() {
     onChange([
       ...logs,
-      { id: `tmp-${Date.now()}`, log_date: '', title: '', status: DEV_LOG_STATUS[0], detail: '' },
+      { id: `tmp-${Date.now()}`, log_date: '', title: '', status: DEV_LOG_STATUS[0], detail: '', ...(showProjectSelect ? { project_ids: [] } : {}) },
     ])
   }
 
@@ -32,7 +33,7 @@ export default function DevelopmentLogEditor({ logs, onChange, allProjects = [] 
     <div className="devlog-editor">
       {logs.map((log, index) => (
         <div key={log.id ?? index} className="devlog-block">
-          <div className="devlog-row">
+          <div className={`devlog-row ${showProjectSelect ? 'devlog-row-with-projects' : ''}`}>
             <input
               type="date"
               value={log.log_date ?? ''}
@@ -60,6 +61,13 @@ export default function DevelopmentLogEditor({ logs, onChange, allProjects = [] 
             <button type="button" className="devlog-remove" onClick={() => removeLog(index)} title="Hapus log ini">
               &times;
             </button>
+            {showProjectSelect && (
+              <ProjectMultiSelect
+                projects={allProjects}
+                selected={log.project_ids ?? []}
+                onChange={(ids) => updateLog(index, 'project_ids', ids)}
+              />
+            )}
           </div>
           {expanded[index] && (
             <div className="devlog-detail-field">
