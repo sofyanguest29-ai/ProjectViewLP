@@ -9,13 +9,14 @@ import FilterBar from '@/components/FilterBar'
 import RowMenu from '@/components/RowMenu'
 import StatusBadge from '@/components/StatusBadge'
 import ProjectModal from '@/components/ProjectModal'
+import BulkLogModal from '@/components/BulkLogModal'
 import RequestorTags from '@/components/RequestorTags'
 import ProjectSearchInput from '@/components/ProjectSearchInput'
 import { createClient } from '@/lib/supabaseClient'
 import { useCurrentUser } from '@/lib/useCurrentUser'
 import { computeStartDate, computeFinishDate } from '@/lib/projectDates'
 import { exportProjectsToExcel } from '@/lib/exportExcel'
-import { impactBand } from '@/lib/constants'
+import { impactBand, randomProjectCode } from '@/lib/constants'
 
 const SORT_OPTIONS = [
   { value: 'no', label: 'No' },
@@ -64,6 +65,7 @@ export default function DashboardPage() {
   const [modalMode, setModalMode] = useState(null)
   const [editingProject, setEditingProject] = useState(null)
   const [editingLogs, setEditingLogs] = useState([])
+  const [bulkLogOpen, setBulkLogOpen] = useState(false)
   const sortRef = useRef(null)
   const sortTriggerRef = useRef(null)
   const sortDropdownRef = useRef(null)
@@ -196,6 +198,78 @@ export default function DashboardPage() {
     setModalMode('edit')
   }
 
+  // Duplicate project + seluruh development log-nya.
+  // Penamaan mengikuti file manager: "Judul" -> "Judul (2)" -> "Judul (3)" ...
+  function buildDuplicateTitle(title) {
+    const base = String(title ?? '').replace(/\s\(\d+\)$/, '')
+    const existing = new Set(projects.map((p) => p.title))
+    let n = 2
+    while (existing.has(`${base} (${n})`)) n += 1
+    return `${base} (${n})`
+  }
+
+  async function handleDuplicate(project) {
+    const { data: logs, error: logFetchError } = await supabase
+      .from('development_logs')
+      .select('*')
+      .eq('project_id', project.id)
+      .order('log_date', { ascending: true })
+    if (logFetchError) {
+      alert(`Gagal membaca development log: ${logFetchError.message}`)
+      return
+    }
+
+    const payload = {
+      title: buildDuplicateTitle(project.title),
+      project_type: project.project_type ?? null,
+      objective: project.objective ?? '',
+      expected_result: project.expected_result ?? '',
+      requestors: project.requestors ?? [],
+      divisions: project.divisions ?? [],
+      impacts: project.impacts ?? {},
+      requirements: project.requirements ?? '',
+      status: project.status,
+      estimated_finish_date: project.estimated_finish_date ?? null,
+      q1_score: project.q1_score ?? null,
+      q2_score: project.q2_score ?? null,
+      q3_score: project.q3_score ?? null,
+      q4_score: project.q4_score ?? null,
+    }
+
+    let newProject = null
+    for (let attempt = 0; attempt < 6 && !newProject; attempt++) {
+      const { data, error } = await supabase
+        .from('projects')
+        .insert({ ...payload, project_code: randomProjectCode() })
+        .select()
+        .single()
+      if (error) {
+        if (error.code === '23505' && attempt < 5) continue
+        alert(`Gagal menduplikat project: ${error.message}`)
+        return
+      }
+      newProject = data
+    }
+
+    if ((logs ?? []).length > 0) {
+      const { error: insertLogError } = await supabase.from('development_logs').insert(
+        logs.map((l) => ({
+          project_id: newProject.id,
+          log_date: l.log_date,
+          title: l.title,
+          status: l.status,
+          detail: l.detail ?? '',
+        }))
+      )
+      if (insertLogError) {
+        await supabase.from('projects').delete().eq('id', newProject.id)
+        alert(`Gagal menduplikat development log: ${insertLogError.message}`)
+        return
+      }
+    }
+    loadProjects()
+  }
+
   function openAdd() {
     setEditingProject(null)
     setEditingLogs([])
@@ -239,7 +313,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="dashboard-top-row">
+        <div className="dashboard-top-row dashboard-filter-row">
           <FilterBar
             filters={filters}
             onChange={setFilters}
@@ -250,6 +324,11 @@ export default function DashboardPage() {
             onPageSizeChange={setPageSize}
           />
           <div className="dashboard-top-buttons">
+            {!isGuest && (
+              <button type="button" className="add-log-btn" onClick={() => setBulkLogOpen(true)}>
+                + Add Log Development
+              </button>
+            )}
             {!isGuest && (
               <button type="button" className="add-project-link" onClick={openAdd}>
                 + Add New Project
@@ -367,6 +446,7 @@ export default function DashboardPage() {
                         <RowMenu
                           isGuest={isGuest}
                           onEdit={() => openEdit(p)}
+                          onDuplicate={() => handleDuplicate(p)}
                           onDelete={() => handleDelete(p)}
                           onChangeStatus={(status) => handleChangeStatus(p, status)}
                         />
@@ -406,6 +486,14 @@ export default function DashboardPage() {
           </>
         )}
       </main>
+
+      {bulkLogOpen && (
+        <BulkLogModal
+          projects={projects}
+          onClose={() => setBulkLogOpen(false)}
+          onSaved={loadProjects}
+        />
+      )}
 
       {modalMode && (
         <ProjectModal
