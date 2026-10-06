@@ -10,6 +10,7 @@ import RowMenu from '@/components/RowMenu'
 import StatusBadge from '@/components/StatusBadge'
 import ProjectModal from '@/components/ProjectModal'
 import BulkLogModal from '@/components/BulkLogModal'
+import ExportExcelModal from '@/components/ExportExcelModal'
 import RequestorTags from '@/components/RequestorTags'
 import ProjectSearchInput from '@/components/ProjectSearchInput'
 import { createClient } from '@/lib/supabaseClient'
@@ -58,6 +59,7 @@ export default function DashboardPage() {
   const [search, setSearch] = useState('')
   const [filters, setFilters] = useState({ division: '', requestor: '', status: [], projectType: [], priority: [] })
   const [pageSize, setPageSize] = useState(10)
+  const [exportOpen, setExportOpen] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [viewMenuOpen, setViewMenuOpen] = useState(false)
   const [sortMenuOpen, setSortMenuOpen] = useState(false)
@@ -283,7 +285,7 @@ export default function DashboardPage() {
   }
 
   function handleExport() {
-    exportProjectsToExcel(filteredProjects, logsByProject)
+    setExportOpen(true)
   }
 
   function selectSort(key) {
@@ -486,6 +488,14 @@ export default function DashboardPage() {
           </>
         )}
       </main>
+
+      {exportOpen && (
+        <ExportExcelModal
+          projects={projects}
+          onClose={() => setExportOpen(false)}
+          onExport={(selected, options) => exportProjectsToExcel(selected, logsByProject, options)}
+        />
+      )}
 
       {bulkLogOpen && (
         <BulkLogModal
