@@ -1923,10 +1923,9 @@ body {
 }
 .export-grid {
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
-  gap: 20px;
-  flex: 1;
-  min-height: 0;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 16px;
+  align-items: start;
 }
 .export-col {
   display: flex;
@@ -1977,7 +1976,7 @@ body {
 }
 .export-options-scroll {
   overflow-y: auto;
-  max-height: 46vh;
+  max-height: 52vh;
 }
 .export-option {
   display: flex;
@@ -1991,32 +1990,17 @@ body {
   font-size: 13px;
   color: #9ca3af;
 }
-.export-toggles {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 24px;
-  padding: 12px 16px;
-  background: #f9fafb;
-  border-radius: 12px;
-}
 .export-footer {
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
+  gap: 8px;
   margin-top: 0;
 }
-.export-summary {
-  font-size: 13px;
-  color: #6b7280;
-}
-.export-actions {
-  display: flex;
-  gap: 8px;
-}
-.export-actions button:disabled {
+.export-footer button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
-@media (max-width: 800px) {
+@media (max-width: 900px) {
   .export-grid {
     grid-template-columns: 1fr;
   }
