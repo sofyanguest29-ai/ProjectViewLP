@@ -112,29 +112,32 @@ export default function ExportExcelModal({ projects = [], onClose, onExport }) {
             <div className="export-col">
               <CheckGroup title="Project Type" options={typeOptions} selected={selTypes} onChange={setSelTypes} />
               <CheckGroup title="Priority Scoring" options={priorityOptions} selected={selPriorities} onChange={setSelPriorities} />
-              <CheckGroup title="Status Project" options={statusOptions} selected={selStatuses} onChange={setSelStatuses} />
             </div>
-          </div>
-
-          <div className="export-toggles">
-            <label className="export-option">
-              <input type="checkbox" checked={includeLogs} onChange={(e) => setIncludeLogs(e.target.checked)} />
-              <span>Sertakan Log Development di hasil tarikan data</span>
-            </label>
-            <label className="export-option">
-              <input type="checkbox" checked={includeProjectId} onChange={(e) => setIncludeProjectId(e.target.checked)} />
-              <span>Sertakan ID Project di hasil tarikan data</span>
-            </label>
+            <div className="export-col">
+              <CheckGroup title="Status Project" options={statusOptions} selected={selStatuses} onChange={setSelStatuses} />
+              <div className="export-group">
+                <div className="export-group-header">
+                  <h3>Opsi Data</h3>
+                </div>
+                <div className="export-options">
+                  <label className="export-option">
+                    <input type="checkbox" checked={includeLogs} onChange={(e) => setIncludeLogs(e.target.checked)} />
+                    <span>Sertakan Log Development</span>
+                  </label>
+                  <label className="export-option">
+                    <input type="checkbox" checked={includeProjectId} onChange={(e) => setIncludeProjectId(e.target.checked)} />
+                    <span>Sertakan ID Project</span>
+                  </label>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="modal-footer export-footer">
-            <span className="export-summary">{matched.length} project akan di-export</span>
-            <div className="export-actions">
-              <button type="button" className="detail-project-btn" onClick={onClose}>Batal</button>
-              <button type="submit" className="export-excel-btn" disabled={matched.length === 0}>
-                Download Excel
-              </button>
-            </div>
+            <button type="button" className="detail-project-btn" onClick={onClose}>Batal</button>
+            <button type="submit" className="export-excel-btn" disabled={matched.length === 0}>
+              Download Excel
+            </button>
           </div>
         </form>
       </div>
