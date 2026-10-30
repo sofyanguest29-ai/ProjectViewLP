@@ -146,6 +146,12 @@ export default function ProjectDetailPage() {
           </div>
 
           <div className="field-block">
+            <label>Estimated Finish Date</label>
+            <p>{project.estimated_finish_date ? format(parseISO(project.estimated_finish_date), 'd MMMM yyyy') : '-'}</p>
+          </div>
+          <div className="field-block" />
+
+          <div className="field-block">
             <label>Expected Result</label>
             <RichContent html={project.expected_result || '-'} allProjects={allProjects} />
           </div>
