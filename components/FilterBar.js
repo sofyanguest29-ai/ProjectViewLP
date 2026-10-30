@@ -89,7 +89,7 @@ export default function FilterBar({
         />
       </div>
       {pageSize !== undefined && onPageSizeChange && (
-        <div className="filter-group">
+        <div className="filter-group filter-group-fixed">
           <label>Tampilkan</label>
           <select className="page-size-select" value={pageSize} onChange={(e) => onPageSizeChange(Number(e.target.value))}>
             {PAGE_SIZE_OPTIONS.map((n) => (
@@ -98,7 +98,7 @@ export default function FilterBar({
           </select>
         </div>
       )}
-      <div className="filter-group filter-clear-group">
+      <div className="filter-group filter-group-fixed filter-clear-group">
         <label>&nbsp;</label>
         <button type="button" className="filter-clear-btn" onClick={clearAll} title="Hapus semua filter">
           <FilterIcon />
