@@ -630,6 +630,8 @@ body {
 }
 .row-menu-status-list {
   position: absolute;
+  display: flex;
+  flex-direction: column;
   left: 100%;
   top: 0;
   background: white;
@@ -2004,4 +2006,47 @@ body {
   .export-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ============ Row menu: submenu status menyesuaikan window ============ */
+.row-menu-status-list button {
+  display: block;
+  width: 100%;
+  white-space: nowrap;
+}
+.row-menu-status-list.sub-left {
+  left: auto;
+  right: 100%;
+}
+.row-menu-status-list.sub-bottom {
+  top: auto;
+  bottom: 0;
+}
+
+/* ============ Filter multi-checklist: teks di-clip (...) ============ */
+.filter-group .multiselect.multifilter {
+  width: 170px;
+}
+.multifilter-trigger {
+  padding: 8px 10px;
+  font-size: 13px;
+  border-radius: 6px;
+  gap: 6px;
+  overflow: hidden;
+}
+.multifilter-text {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.multifilter-trigger .multiselect-caret {
+  flex: 0 0 auto;
+}
+
+/* Tanda field wajib */
+.required-mark {
+  color: #dc2626;
+  font-weight: 700;
 }
