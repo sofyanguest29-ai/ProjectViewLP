@@ -2025,7 +2025,7 @@ body {
 
 /* ============ Filter multi-checklist: teks di-clip (...) ============ */
 .filter-group .multiselect.multifilter {
-  width: 170px;
+  width: 100%;
 }
 .multifilter-trigger {
   padding: 8px 10px;
@@ -2049,4 +2049,27 @@ body {
 .required-mark {
   color: #dc2626;
   font-weight: 700;
+}
+
+/* ============ Filter: semua filter + Tampilkan + hapus filter dalam 1 row ============ */
+.dashboard-filter-row {
+  flex-wrap: wrap;
+}
+.dashboard-filter-row > .filter-bar {
+  flex: 1 1 760px;
+  min-width: 0;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+}
+.filter-bar .filter-group {
+  flex: 1 1 0;
+  min-width: 110px;
+}
+.filter-bar .filter-group.filter-group-fixed {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+.filter-bar .filter-group .page-size-select {
+  min-width: 0;
+  width: 72px;
 }
