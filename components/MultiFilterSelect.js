@@ -41,16 +41,17 @@ export default function MultiFilterSelect({ options, selected, onChange, placeho
   const selectedLabels = options.filter((o) => selected.includes(o.value)).map((o) => o.label)
 
   return (
-    <div className="multiselect" ref={triggerRef}>
-      <button type="button" className="multiselect-trigger" onClick={handleToggleOpen}>
+    <div className="multiselect multifilter" ref={triggerRef}>
+      <button
+        type="button"
+        className="multiselect-trigger multifilter-trigger"
+        onClick={handleToggleOpen}
+        title={selectedLabels.join(', ')}
+      >
         {selectedLabels.length === 0 ? (
-          <span className="multiselect-placeholder">{placeholder}</span>
+          <span className="multifilter-text multiselect-placeholder">{placeholder}</span>
         ) : (
-          <span className="multiselect-tags">
-            {selectedLabels.map((l) => (
-              <span key={l} className="multiselect-tag">{l}</span>
-            ))}
-          </span>
+          <span className="multifilter-text">{selectedLabels.join(', ')}</span>
         )}
         <span className="multiselect-caret">&#9662;</span>
       </button>

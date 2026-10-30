@@ -43,6 +43,8 @@ export default function ProjectModal({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
+  const reqMark = mode !== 'edit' ? <span className="required-mark"> *</span> : null
+
   const totalScore = useMemo(() => {
     const values = Object.values(scores)
     if (values.some((v) => v === null || v === undefined)) return null
@@ -78,6 +80,24 @@ export default function ProjectModal({
     if (requestors.length === 0) {
       setError('Nama Requestor wajib diisi minimal 1')
       return
+    }
+
+    // Project baru: semua field wajib diisi kecuali Estimated Date dan Impact Measurement
+    if (mode !== 'edit') {
+      const isEmptyRich = (html) => !String(html ?? '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()
+      const missing = []
+      if (!projectType) missing.push('Project Type')
+      if (isEmptyRich(objective)) missing.push('Objective')
+      if (isEmptyRich(expectedResult)) missing.push('Expected Result')
+      if (divisions.length === 0) missing.push('Divisi')
+      if (isEmptyRich(requirements)) missing.push('Requirements')
+      if (!logs.some((l) => l.log_date && l.title?.trim())) missing.push('Development Log (minimal 1, tanggal + judul)')
+      if (!status) missing.push('Status Project')
+      if (Object.values(scores).some((v) => v === null || v === undefined)) missing.push('Priority Scoring (semua pertanyaan)')
+      if (missing.length > 0) {
+        setError(`Field wajib belum diisi: ${missing.join(', ')}`)
+        return
+      }
     }
 
     setSaving(true)
@@ -150,13 +170,13 @@ export default function ProjectModal({
           {error && <div className="error-box">{error}</div>}
 
           <div className="field-block">
-            <label>Judul Project</label>
+            <label>Judul Project{reqMark}</label>
             <input value={title} onChange={(e) => setTitle(e.target.value)} required />
           </div>
 
           <div className="field-block">
-            <label>Project Type</label>
-            <select value={projectType} onChange={(e) => setProjectType(e.target.value)}>
+            <label>Project Type{reqMark}</label>
+            <select value={projectType} onChange={(e) => setProjectType(e.target.value)} required={mode !== 'edit'}>
               <option value="">Pilih project type...</option>
               {PROJECT_TYPES.map((t) => (
                 <option key={t} value={t}>{t}</option>
@@ -165,17 +185,17 @@ export default function ProjectModal({
           </div>
 
           <div className="field-block">
-            <label>Objective</label>
+            <label>Objective{reqMark}</label>
             <RichTextEditor value={objective} onChange={setObjective} allProjects={allProjects} placeholder="Tulis objective di sini..." />
           </div>
 
           <div className="field-block">
-            <label>Expected Result</label>
+            <label>Expected Result{reqMark}</label>
             <RichTextEditor value={expectedResult} onChange={setExpectedResult} allProjects={allProjects} placeholder="Tulis expected result di sini..." />
           </div>
 
           <div className="field-block">
-            <label>Nama Requestor</label>
+            <label>Nama Requestor{reqMark}</label>
             <RequestorSelect
               selected={requestors}
               onChange={setRequestors}
@@ -185,7 +205,7 @@ export default function ProjectModal({
           </div>
 
           <div className="field-block">
-            <label>Divisi</label>
+            <label>Divisi{reqMark}</label>
             <DivisionSelect
               selected={divisions}
               onChange={setDivisions}
@@ -200,12 +220,12 @@ export default function ProjectModal({
           </div>
 
           <div className="field-block">
-            <label>Requirements</label>
+            <label>Requirements{reqMark}</label>
             <RichTextEditor value={requirements} onChange={setRequirements} allProjects={allProjects} placeholder="Tulis requirements di sini..." />
           </div>
 
           <div className="field-block">
-            <label>Development Log</label>
+            <label>Development Log{reqMark}</label>
             <DevelopmentLogEditor logs={logs} onChange={setLogs} allProjects={allProjects} />
           </div>
 
@@ -215,7 +235,7 @@ export default function ProjectModal({
           </div>
 
           <div className="field-block">
-            <label>Status Project</label>
+            <label>Status Project{reqMark}</label>
             <select value={status} onChange={(e) => setStatus(e.target.value)}>
               {PROJECT_STATUS.map((s) => (
                 <option key={s.value} value={s.value}>{s.label}</option>
@@ -227,10 +247,11 @@ export default function ProjectModal({
             <h3>Priority Scoring</h3>
             {QUESTIONNAIRE.map((q) => (
               <div className="field-block" key={q.key}>
-                <label>{q.question}</label>
+                <label>{q.question}{reqMark}</label>
                 <select
                   value={scores[q.key] ?? ''}
                   onChange={(e) => setScores((prev) => ({ ...prev, [q.key]: e.target.value ? Number(e.target.value) : null }))}
+                  required={mode !== 'edit'}
                 >
                   <option value="">Pilih jawaban...</option>
                   {q.options.map((opt) => (
